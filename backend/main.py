@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import date, timedelta, datetime, timezone
 
@@ -58,20 +59,50 @@ async def _load_schedule() -> list[tuple[date, str]]:
 
 
 async def _check_and_wipe_if_needed(schedule: list[tuple[date, str]]) -> None:
-    """Wipe room/schedule cache if a new semester boundary has been crossed."""
+    """Wipe room/schedule cache only when the effective semester has changed.
+
+    The effective semester is the latest term whose (start_date - 1 day) has
+    been reached — i.e. we roll over the day *before* classes start so users
+    always search the incoming semester's schedule.
+
+    The old implementation looped over every past semester and compared each
+    one against the stored active term, which wiped the cache on *every*
+    restart (e.g. with active=Fall, the Winter iteration would see
+    active != Winter and wipe, then Spring, Summer, Fall...).  Comparing only
+    the single effective term fixes that.
+    """
+    # YEAR_TERM override is for local testing — never auto-wipe in that mode.
+    if os.getenv("YEAR_TERM"):
+        return
+    if not schedule:
+        return
     today = date.today()
+    effective: str | None = None
     for start_date, term_code in schedule:
         wipe_date = start_date - timedelta(days=1)
         if today >= wipe_date:
-            active = await get_active_term()
-            if active != term_code:
-                logger.warning(
-                    "Semester rollover: wiping cache for new term %s (was %s)",
-                    term_code, active,
-                )
-                await wipe_for_new_term(term_code)
-                settings.current_term = term_code
-                logger.info("Cache wiped. Now serving term %s.", term_code)
+            effective = term_code
+    if effective is None:
+        return
+    active = await get_active_term()
+    if active is None:
+        await set_active_term(effective)
+        settings.current_term = effective
+        return
+    if active != effective:
+        logger.warning(
+            "Semester rollover: wiping cache for new term %s (was %s)",
+            effective, active,
+        )
+        await wipe_for_new_term(effective)
+        settings.current_term = effective
+        logger.info("Cache wiped. Now serving term %s.", effective)
+    else:
+        # No wipe needed, but keep the in-process term in sync.  This matters
+        # on the day-before boundary where compute_current_term() (which uses
+        # start_date) still returns the old term while the effective term
+        # (which uses wipe_date) has already rolled over.
+        settings.current_term = effective
 
 
 async def _background_watcher() -> None:
