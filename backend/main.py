@@ -6,9 +6,13 @@ from contextlib import asynccontextmanager
 from datetime import date, timedelta, datetime, timezone
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
+
+from .api_v1 import router as api_v1_router
+from .mcp_server import get_mcp_app
 
 from .config import settings, compute_current_term
 from .database import (
@@ -135,14 +139,26 @@ async def lifespan(app: FastAPI):
     # Wipe if we're already past a semester boundary
     await _check_and_wipe_if_needed(schedule)
 
-    watcher = asyncio.create_task(_background_watcher())
-    yield
-    watcher.cancel()
-    for task in _discovery_tasks.values():
-        task.cancel()
+    # MCP session manager must run for the mounted Streamable HTTP app
+    from .mcp_server import mcp as _mcp
+
+    async with _mcp.session_manager.run():
+        watcher = asyncio.create_task(_background_watcher())
+        yield
+        watcher.cancel()
+        for task in _discovery_tasks.values():
+            task.cancel()
 
 
 app = FastAPI(title="FreeRoomFinder", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "OPTIONS"],
+    allow_headers=["*"],
+)
+app.include_router(api_v1_router)
+app.mount("/mcp", get_mcp_app())
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 

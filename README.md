@@ -144,3 +144,52 @@ git push
 ```
 
 Railway picks up the push and redeploys automatically.
+
+---
+
+## Public API v1 (read-only JSON)
+
+One shared core (`backend/availability.py::find_open_rooms`) powers both the
+REST API and the MCP tools, so they always agree. Human docs page:
+`GET /api/v1/docs`.
+
+```bash
+curl "http://localhost:8080/api/v1/rooms/available?start=15:00&duration=120&building=HBLL"
+curl "http://localhost:8080/api/v1/rooms/available?date=2026-09-23&start=09:00&duration=60"
+curl "http://localhost:8080/api/v1/buildings"
+curl "http://localhost:8080/api/v1/rooms/HBLL:2214"   # id = BUILDING:room, URL-encoded
+```
+
+- Params: `date` YYYY-MM-DD (default today, America/Denver) → mapped to its
+  weekday; `start` HH:MM required; `duration` 15–960 min; `group_size` advisory
+  only (capacity data doesn't exist, never excludes); `building` code;
+  `amenities` comma-separated — always matches nothing (no amenity data).
+- Every response includes `as_of` + `timezone: America/Denver`; times ISO 8601.
+- Bad params → `400 {"detail": "..."}`. Rate limit 120 req/min/IP (429).
+  Server-side response cache ~5 min. CORS open for GET.
+- Honest nulls: `capacity` usually null, `amenities` always `[]`,
+  `booking_url` = generic BYU class-search page, `requires_login: false`.
+  Rooms are walk-in spaces inferred from class times, not bookable reservations.
+
+## Remote MCP server (Claude custom connector)
+
+- URL after deploy: `https://<your-railway-domain>/mcp` (Streamable HTTP,
+  official `mcp` SDK v2, no auth — read-only public data).
+- Tools (all read-only): `find_open_rooms`, `get_room_details`,
+  `list_buildings`, `get_booking_link`. Verify locally:
+  `npx @modelcontextprotocol/inspector` → transport Streamable HTTP →
+  URL `http://localhost:8080/mcp`.
+- Claude setup: Settings → Connectors → Add custom connector → paste the
+  `/mcp` URL.
+- Example prompts: "Find a room for 4 people in the library tomorrow at 3pm
+  for 2 hours" · "What's open in the HBLL this Saturday morning?" ·
+  "Get details and today's availability for HBLL:2214."
+
+## Upstream respect / BYU terms note
+
+Source is BYU's public `noauth` class search (no login, no credentials ever
+collected/proxied/stored). We cache DB-side indefinitely + 5-min API cache,
+limit discovery concurrency (15, 0.5s delay), rate-limit callers, and send a
+normal browser UA. BYU's IT appropriate-use policy has no explicit scraping
+license — `noauth` implies public, but if OIT objects, throttle further or
+remove the building. No commercial use; site use is incidental/personal.
