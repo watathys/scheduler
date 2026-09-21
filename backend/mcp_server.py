@@ -179,9 +179,30 @@ async def get_booking_link(
 
 
 def get_mcp_app():
-    """Starlette sub-app serving Streamable HTTP at its root (mount at /mcp)."""
+    """Starlette sub-app serving Streamable HTTP at its root (mount at /mcp).
+
+    NOTE: the MCP SDK auto-enables localhost-only DNS-rebinding protection
+    (421 on any other Host) when streamable_http_app() is called with its
+    default host="127.0.0.1". That is correct for local dev but rejects every
+    request once deployed (e.g. Railway hostname, Claude's connector). This
+    server is public, read-only, and unauthenticated by design, so rebinding
+    protection buys nothing here — disable it explicitly so any Host is
+    accepted. Re-enable with explicit allowed_hosts/allowed_origins if the
+    server ever handles credentials or private data.
+    """
     try:
-        return mcp.streamable_http_app(streamable_http_path="/")
+        from mcp.server.transport_security import TransportSecuritySettings
+
+        _no_rebinding = TransportSecuritySettings(
+            enable_dns_rebinding_protection=False
+        )
+    except ImportError:
+        _no_rebinding = None  # type: ignore
+    kwargs = {"streamable_http_path": "/"}
+    if _no_rebinding is not None:
+        kwargs["transport_security"] = _no_rebinding
+    try:
+        return mcp.streamable_http_app(**kwargs)  # type: ignore
     except TypeError:
         return mcp.streamable_http_app()
 
