@@ -25,6 +25,7 @@ from .buildings import ALL_BUILDINGS, get_display_name
 from .models import SearchRequest, SearchResponse, BuildingInfo, CacheStats, DiscoveryStatus
 from .discovery import discover_building, discover_with_progress
 from .scheduler import find_free_rooms
+from .database import init_schedule_db
 
 logger = logging.getLogger("freeroomfinder")
 
@@ -124,6 +125,7 @@ async def _background_watcher() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    await init_schedule_db()
 
     # Load (and possibly refresh) the semester schedule from BYU's calendar
     schedule = await _load_schedule()

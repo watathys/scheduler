@@ -1,0 +1,129 @@
+{
+  "sections": [
+    {
+      "section_number": "001",
+      "mode": "Classroom",
+      "credit_hours": "3",
+      "instructors": [
+        {
+          "preferred_first_name": "Melissa",
+          "preferred_surname": "Larson",
+          "attribute_type": "PRIMARY"
+        }
+      ],
+      "times": [
+        {
+          "begin_time": "0800",
+          "end_time": "0850",
+          "building": "JSB",
+          "room": "140",
+          "mon": "M",
+          "tue": null,
+          "wed": "W",
+          "thu": null,
+          "fri": "F",
+          "sat": null,
+          "sun": null
+        }
+      ],
+      "availability": { "seats_available": "35", "class_size": "40", "waitlist_size": "0" }
+    },
+    {
+      "section_number": "002",
+      "mode": "Classroom",
+      "credit_hours": "4",
+      "instructors": [
+        {
+          "preferred_first_name": "Jason",
+          "preferred_surname": "Kotter",
+          "attribute_type": "PRIMARY"
+        }
+      ],
+      "times": [
+        {
+          "begin_time": "1000",
+          "end_time": "1115",
+          "building": "TNRB",
+          "room": "321",
+          "mon": null,
+          "tue": "T",
+          "wed": null,
+          "thu": "R",
+          "fri": null,
+          "sat": null,
+          "sun": null
+        },
+        {
+          "begin_time": "1400",
+          "end_time": "1550",
+          "building": "TNRB",
+          "room": "205",
+          "mon": null,
+          "tue": null,
+          "wed": "W",
+          "thu": null,
+          "fri": null,
+          "sat": null,
+          "sun": null
+        }
+      ],
+      "availability": { "seats_available": "12", "class_size": "30", "waitlist_size": "5" }
+    },
+    {
+      "section_number": "900",
+      "mode": "On-Demand Remote Delivery",
+      "credit_hours": "3",
+      "instructors": [
+        {
+          "preferred_first_name": "Morgan",
+          "preferred_surname": "Cummings",
+          "attribute_type": "PRIMARY"
+        }
+      ],
+      "times": [
+        {
+          "begin_time": null,
+          "end_time": null,
+          "building": null,
+          "room": "TBA",
+          "mon": null,
+          "tue": null,
+          "wed": null,
+          "thu": null,
+          "fri": null,
+          "sat": null,
+          "sun": null
+        }
+      ],
+      "availability": { "seats_available": "20", "class_size": "20", "waitlist_size": "0" }
+    },
+    {
+      "section_number": "950",
+      "mode": "Live Remote Delivery",
+      "credit_hours": "3",
+      "instructors": [
+        {
+          "preferred_first_name": "Ian",
+          "preferred_surname": "Matthews",
+          "attribute_type": "PRIMARY"
+        }
+      ],
+      "times": [
+        {
+          "begin_time": "0800",
+          "end_time": "0915",
+          "building": null,
+          "room": "TBA",
+          "mon": null,
+          "tue": null,
+          "wed": "W",
+          "thu": null,
+          "fri": null,
+          "sat": null,
+          "sun": null
+        }
+      ],
+      "availability": { "seats_available": "250", "class_size": "250", "waitlist_size": "0" }
+    }
+  ]
+}
