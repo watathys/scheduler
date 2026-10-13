@@ -672,3 +672,51 @@ async def get_section_meetings(section_id: int) -> list[dict]:
         ) as cur:
             rows = await cur.fetchall()
     return [dict(r) for r in rows]
+
+
+# ── Schedule builder: scheduler API (Step 5) helpers ────────────────────────
+
+async def get_latest_sections_term() -> str | None:
+    """Newest term code present in the sections table, or None when empty.
+
+    Term codes are ``YYYYT``; the leading year makes string ordering match
+    calendar order (``"20271"`` Winter 2027 > ``"20265"`` Fall 2026).
+    """
+    async with aiosqlite.connect(DB) as db:
+        async with db.execute(
+            "SELECT term FROM sections ORDER BY term DESC LIMIT 1"
+        ) as cur:
+            row = await cur.fetchone()
+    return row[0] if row else None
+
+
+async def count_sections() -> int:
+    async with aiosqlite.connect(DB) as db:
+        async with db.execute("SELECT COUNT(*) FROM sections") as cur:
+            row = await cur.fetchone()
+    return int(row[0]) if row else 0
+
+
+async def get_scheduler_stats() -> dict:
+    """Aggregate counts + freshness timestamps for GET /api/v1/scheduler/status."""
+    async with aiosqlite.connect(DB) as db:
+        db.row_factory = aiosqlite.Row
+        stats: dict = {}
+
+        async with db.execute("SELECT COUNT(*) AS c FROM sections") as cur:
+            stats["section_count"] = (await cur.fetchone())["c"]
+        async with db.execute("SELECT COUNT(*) AS c FROM meetings") as cur:
+            stats["meeting_count"] = (await cur.fetchone())["c"]
+        async with db.execute("SELECT COUNT(*) AS c FROM professors") as cur:
+            stats["professor_count"] = (await cur.fetchone())["c"]
+        async with db.execute(
+            "SELECT COUNT(*) AS c FROM professors WHERE num_ratings IS NOT NULL"
+        ) as cur:
+            stats["professors_with_ratings"] = (await cur.fetchone())["c"]
+        async with db.execute("SELECT MAX(last_scraped) AS t FROM sections") as cur:
+            row = await cur.fetchone()
+            stats["last_scrape_time"] = row["t"] if row else None
+        async with db.execute("SELECT MAX(last_fetched) AS t FROM professors") as cur:
+            row = await cur.fetchone()
+            stats["last_rmp_refresh_time"] = row["t"] if row else None
+    return stats

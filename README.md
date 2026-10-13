@@ -126,7 +126,24 @@ Example: `20261` = Winter 2026.
 | `DISCOVERY_SEMAPHORE` | No | Max concurrent room-scrape requests (default: `15`) |
 | `CRAWL_DELAY` | No | Seconds between requests during discovery (default: `0.5`) |
 
+### Schedule-builder env vars (Step 5)
+
+| Variable | Required | Description |
+|---|---|---|
+| `OPENAI_API_KEY` | No | Enables LLM constraint parsing + schedule explanations (falls back to deterministic templates when unset) |
+| `OPENAI_MODEL` | No | LLM model name (e.g. `gpt-5.6-terra`) |
+| `DISABLE_BACKGROUND_JOBS` | No | `1` disables the background section-scrape / RMP-refresh loops (local dev) |
+| `SECTION_SCRAPE_INTERVAL_SECONDS` | No | Weekly re-scrape cadence (default `604800` = 7 days) |
+| `RMP_REFRESH_INTERVAL_SECONDS` | No | RMP refresh cadence (default `604800` = 7 days) |
+| `REGISTRATION_WINDOW_START` | No | `YYYY-MM-DD` — start of the daily-scrape window around registration |
+| `REGISTRATION_WINDOW_END` | No | `YYYY-MM-DD` — end of the daily-scrape window |
+| `DAILY_SCRAPE_INTERVAL_SECONDS` | No | Scrape cadence inside the registration window (default `86400` = daily) |
+| `SCHEDULER_TIMEOUT_SECONDS` | No | Per-request ceiling on the solver (default `20`) |
+| `GENERATE_RATE_LIMIT` | No | `/schedules/generate` requests/min/IP (default `10`) |
+
 > `YEAR_TERM` does not need to be set in production. The app detects the current term automatically.
+
+A local `.env` file is read at startup (`python-dotenv`); copy any of the above into it. `.env` is git-ignored.
 
 ---
 
@@ -170,6 +187,53 @@ curl "http://localhost:8080/api/v1/rooms/HBLL:2214"   # id = BUILDING:room, URL-
 - Honest nulls: `capacity` usually null, `amenities` always `[]`,
   `booking_url` = generic BYU class-search page, `requires_login: false`.
   Rooms are walk-in spaces inferred from class times, not bookable reservations.
+
+## Schedule-builder API (`/api/v1/scheduler`)
+
+The AI schedule builder adds a student-facing API alongside the room finder.
+It serves the **next** term (the newest term present in the `sections` table),
+not a date-derived default. On a cold start with no sections, `/status` reports
+`"loading"` and `/schedules/generate` returns a friendly `503` while a
+background scrape populates data.
+
+```bash
+# Autocomplete over course codes + titles (prefix first, then fuzzy)
+curl "http://localhost:8080/api/v1/scheduler/courses/search?q=mktg&limit=10"
+
+# Generate up to 3 conflict-free schedules
+curl -X POST "http://localhost:8080/api/v1/scheduler/schedules/generate" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "courses": ["MKTG 201", "STRAT 305", "FIN 201"],
+           "preferences": ["easy", "days_off", "no_gaps"],
+           "days_off": ["Friday"],
+           "earliest_start": "08:00",
+           "latest_end": "22:00",
+           "allow_online": true,
+           "extra_constraints_text": "no classes Tuesday before 10am"
+         }'
+
+# Data freshness + term + whether the LLM key is configured
+curl "http://localhost:8080/api/v1/scheduler/status"
+```
+
+- `GET /courses/search?q=…&limit=10` — case-insensitive, ignores spaces/hyphens;
+  prefix matches ranked first, then fuzzy; empty list for queries `< 2` chars.
+  Returns `code`, `title`, `credits`, `section_count`.
+- `POST /schedules/generate` — body: `courses` (1–8), `preferences` (ordered
+  list of exactly 3 from `easy`/`days_off`/`no_gaps`), `days_off` (default
+  `["Friday"]`), `earliest_start`/`latest_end` (`HH:MM`), `allow_online`,
+  `extra_constraints_text` (≤ 500 chars). Returns the active term, up to 3
+  schedules (sections with meetings, instructor names, ease score + confidence,
+  async-online list, metrics, score, explanation), parser `warnings` and
+  `assumptions`, and `cap_hit`.
+- Errors: unknown course codes → `422` with fuzzy `suggestions`; no feasible
+  schedule → `200` with `"status": "no_schedule"` and a structured
+  `bottleneck` diagnosis; bad input → `422`; data still loading → `503`.
+- Rate limit: `10` `/schedules/generate` requests/min/IP (`429`).
+
+Run the script `python scripts/try_api.py` for these examples, or
+`python scripts/try_api.py --run` to hit a live server.
 
 ## Remote MCP server (Claude custom connector)
 
