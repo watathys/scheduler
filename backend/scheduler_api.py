@@ -1,8 +1,6 @@
-"""Scheduler API (Step 5): course autocomplete, schedule generation, status.
+"""Scheduler API: course autocomplete, schedule generation, and status.
 
-Sits alongside the existing room-finder API (``/api/v1``) and the MCP server;
-this router only adds new endpoints under ``/api/v1/scheduler`` and never
-touches the room-finder routes.
+This is the only API surface; all routes live under ``/api/v1/scheduler``.
 """
 
 from __future__ import annotations
@@ -41,7 +39,7 @@ SCHEDULER_TIMEOUT_SECONDS = float(os.getenv("SCHEDULER_TIMEOUT_SECONDS", "20"))
 # ── Rate limiting (in-memory, per IP) ────────────────────────────────────────
 # TODO: this limiter is per-process and resets on restart / does not span
 # multiple instances. For a multi-instance deployment, replace with a shared
-# store (e.g. Redis) keyed by IP. Mirrors the pattern used in api_v1.py.
+# store (e.g. Redis) keyed by IP.
 GENERATE_RATE_LIMIT = int(os.getenv("GENERATE_RATE_LIMIT", "10"))
 GENERATE_RATE_WINDOW = 60.0
 _generate_rate: dict[str, list[float]] = {}

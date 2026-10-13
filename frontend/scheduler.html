@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BYU Schedule Builder</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/scheduler.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <a class="brand-name" href="/">BYU Schedule Builder</a>
+  </div>
+  <button class="btn-ghost" aria-label="Toggle color theme" id="btn-theme" type="button">Dark</button>
+</header>
+
+<main class="app-main">
+
+  <!-- Stepper (form flow) -->
+  <section id="stepper-wrap" aria-label="Schedule builder">
+
+    <nav class="stepper" aria-label="Steps">
+      <ol class="stepper-list">
+        <li><button type="button" class="step-dot" data-goto="0"><span class="step-num">1</span>Courses</button></li>
+        <li><button type="button" class="step-dot" data-goto="1"><span class="step-num">2</span>Preferences</button></li>
+        <li><button type="button" class="step-dot" data-goto="2"><span class="step-num">3</span>Questions</button></li>
+      </ol>
+    </nav>
+
+    <!-- Step 1: Courses -->
+    <div class="step-panel" data-step="0">
+      <h2 class="step-title">Which courses are you taking?</h2>
+      <p class="step-hint">Add up to 8 courses by code or title.</p>
+
+      <div class="autocomplete">
+        <label class="sr-only" for="course-input">Search for a course</label>
+        <input id="course-input" type="text" autocomplete="off" spellcheck="false"
+               placeholder="Search courses… e.g. MKTG 201"
+               role="combobox" aria-autocomplete="list" aria-expanded="false"
+               aria-controls="course-suggestions" aria-activedescendant="">
+        <ul id="course-suggestions" class="suggestions" role="listbox" hidden></ul>
+      </div>
+
+      <div class="chips" id="course-chips" aria-label="Selected courses"></div>
+      <p class="step-hint count-hint" id="course-count" aria-live="polite">0 of 8 courses added</p>
+    </div>
+
+    <!-- Step 2: Preferences -->
+    <div class="step-panel" data-step="1" hidden>
+      <h2 class="step-title">Rank your preferences</h2>
+      <p class="step-hint">Drag to reorder. The top preference carries the most weight.</p>
+
+      <ol class="pref-list" id="pref-list" role="list"></ol>
+
+      <div class="days-off" id="days-off-wrap">
+        <fieldset>
+          <legend>Days you want off</legend>
+          <p class="field-help">Schedules will never include classes on these days.</p>
+          <div class="weekday-options" id="weekday-options"></div>
+        </fieldset>
+      </div>
+    </div>
+
+    <!-- Step 3: Questions -->
+    <div class="step-panel" data-step="2" hidden>
+      <h2 class="step-title">Time limits</h2>
+      <p class="step-hint">No schedule will start earlier or end later than these.</p>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="earliest-start">Earliest class start</label>
+          <select id="earliest-start"></select>
+        </div>
+        <div class="field">
+          <label for="latest-end">Latest class end</label>
+          <select id="latest-end"></select>
+        </div>
+      </div>
+
+      <label class="toggle-row">
+        <input type="checkbox" id="allow-online">
+        <span class="toggle-label">Okay with online classes</span>
+      </label>
+
+      <div class="field">
+        <label for="extra-text">Anything else? <span class="optional">(optional)</span></label>
+        <textarea id="extra-text" rows="3" maxlength="500"
+                  placeholder="e.g. no classes Tuesday at 4, avoid 8 AM on Mondays"></textarea>
+      </div>
+    </div>
+
+    <div class="step-nav" id="step-nav">
+      <button class="btn-secondary" id="btn-back" type="button">Back</button>
+      <button class="btn-primary" id="btn-next" type="button">Next</button>
+    </div>
+
+    <p class="form-error" id="form-error" role="alert" hidden></p>
+  </section>
+
+  <!-- Results -->
+  <section id="results-wrap" aria-label="Your schedules" hidden>
+    <div class="results-head">
+      <h2 class="page-title">Your schedules</h2>
+      <div class="results-actions">
+        <button class="btn-secondary" id="btn-edit" type="button">Edit answers</button>
+        <button class="btn-secondary" id="btn-restart" type="button">Start over</button>
+      </div>
+    </div>
+
+    <div id="results-notices"></div>
+
+    <div class="option-tabs" id="option-tabs" role="tablist" aria-label="Schedule options"></div>
+    <div id="option-panels"></div>
+  </section>
+
+  <!-- No schedule -->
+  <section id="no-schedule-wrap" aria-label="No schedules found" hidden>
+    <div class="card">
+      <h2 class="step-title">No schedules match your constraints</h2>
+      <div id="bottleneck-body" class="bottleneck"></div>
+      <div class="step-nav no-schedule-actions">
+        <button class="btn-primary" id="btn-edit-constraints" type="button">Back to questions</button>
+        <button class="btn-secondary" id="btn-restart-2" type="button">Start over</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer-disclaimer">
+    Unofficial tool, not affiliated with BYU. Data may be out of date — confirm in myBYU before enrolling.
+  </footer>
+</main>
+
+<p class="sr-only" id="live-region" aria-live="polite"></p>
+
+<script src="/static/scheduler.js"></script>
+</body>
+</html>

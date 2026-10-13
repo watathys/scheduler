@@ -16,8 +16,10 @@ Design notes
 * Every failure falls back gracefully — the app never crashes because the LLM
   did. Parsing failures return an empty ``blocked_times`` list plus a warning;
   explanation failures (or a missing API key) return deterministic templates.
-* ``OPENAI_API_KEY`` / ``OPENAI_MODEL`` come from the environment; there is no
-  hardcoded model name. The API key is never logged.
+* Models come from the environment; there is no hardcoded model name. Each job
+  can name its own model — ``OPENAI_PARSE_MODEL`` for ``parse_constraints`` and
+  ``OPENAI_EXPLAIN_MODEL`` for ``explain_schedules`` — and both fall back to
+  the shared ``OPENAI_MODEL``. ``OPENAI_API_KEY`` is never logged.
 """
 
 from __future__ import annotations
@@ -55,12 +57,20 @@ class LLMUnavailable(Exception):
 
 # ── Provider resolution (the only provider-aware code besides _complete) ─────
 
+# Shared default model, plus one optional override per LLM job. Resolution
+# order is: job-specific var -> OPENAI_MODEL -> None (LLM disabled). No model
+# name is ever hardcoded here.
+DEFAULT_MODEL_ENV = "OPENAI_MODEL"
+PARSE_MODEL_ENV = "OPENAI_PARSE_MODEL"
+EXPLAIN_MODEL_ENV = "OPENAI_EXPLAIN_MODEL"
+
 _client: Optional[AsyncOpenAI] = None
 _client_key: Optional[str] = None
 
 
-def _env_model() -> Optional[str]:
-    return os.getenv("OPENAI_MODEL") or None
+def _env_model(var: str = DEFAULT_MODEL_ENV) -> Optional[str]:
+    """Resolve a model name from ``var``, falling back to ``OPENAI_MODEL``."""
+    return os.getenv(var) or os.getenv(DEFAULT_MODEL_ENV) or None
 
 
 def _get_client() -> Optional[AsyncOpenAI]:
@@ -77,9 +87,10 @@ def _get_client() -> Optional[AsyncOpenAI]:
 def _client_model(
     override_client: Optional[AsyncOpenAI],
     override_model: Optional[str],
+    env_var: str = DEFAULT_MODEL_ENV,
 ) -> tuple[Optional[AsyncOpenAI], Optional[str]]:
     client = override_client or _get_client()
-    model = override_model or _env_model()
+    model = override_model or _env_model(env_var)
     if client is None or model is None:
         return None, None
     return client, model
@@ -381,11 +392,11 @@ async def parse_constraints(
     if len(text) > MAX_INPUT_CHARS:
         text = text[:MAX_INPUT_CHARS]
 
-    resolved_client, resolved_model = _client_model(client, model)
+    resolved_client, resolved_model = _client_model(client, model, PARSE_MODEL_ENV)
     if resolved_client is None or resolved_model is None:
         return _parse_fallback(
             "Constraints could not be parsed (LLM not configured: set OPENAI_API_KEY "
-            "and OPENAI_MODEL)."
+            "and OPENAI_MODEL or OPENAI_PARSE_MODEL)."
         )
 
     messages = [
@@ -456,8 +467,8 @@ def _facts_payload(schedules: list[ScheduleOut], preferences: list[str]) -> str:
         facts.append({
             "index": i + 1,
             "score": s.total_score,
-            "days_on_campus": m.days_on_campus,
             "total_gap_minutes": m.total_gap_minutes,
+            "days_on_campus": m.days_on_campus,
             "average_ease": m.average_ease,
             "earliest_start": _fmt_min(m.earliest_start),
             "latest_end": _fmt_min(m.latest_end),
@@ -469,27 +480,28 @@ def _facts_payload(schedules: list[ScheduleOut], preferences: list[str]) -> str:
 def _template_explanations(schedules: list[ScheduleOut], preferences: list[str]) -> list[str]:
     labels = {
         "easy": "ease of instructors",
-        "days_off": "days off",
         "no_gaps": "fewer gaps",
+        "fewer_days": "fewer days on campus",
     }
     out: list[str] = []
     for i, s in enumerate(schedules):
         m = s.metrics
+        ease_clause = (
+            f"an average ease score of {m.average_ease}/100"
+            if m.average_ease is not None
+            else "no ease score (none of the instructors have ratings)"
+        )
         parts = [
-            f"Schedule {i + 1} has classes on {m.days_on_campus} day(s) on campus, "
-            f"{m.total_gap_minutes} minutes of total gaps, and an average ease score "
-            f"of {m.average_ease}/100."
+            f"Schedule {i + 1} has {m.total_gap_minutes} minutes of total gaps, "
+            f"{m.days_on_campus} day(s) on campus, and {ease_clause}."
         ]
         if m.professors_without_ratings:
             parts.append(
-                f"Ratings data is thin: {m.professors_without_ratings} professor(s) have "
-                "no ratings, so ease estimates are uncertain."
+                f"{m.professors_without_ratings} professor(s) have no RateMyProfessors "
+                "ratings and are excluded from the ease score."
             )
-        parts.append(
-            f"Top priority is {labels.get(preferences[0], preferences[0])}, then "
-            f"{labels.get(preferences[1], preferences[1])}, then "
-            f"{labels.get(preferences[2], preferences[2])}."
-        )
+        ranked = ", ".join(labels.get(p, p) for p in preferences)
+        parts.append(f"Preferences are ranked: {ranked}.")
         out.append(" ".join(parts))
     return out
 
@@ -506,7 +518,7 @@ async def explain_schedules(
     if n == 0:
         return []
 
-    resolved_client, resolved_model = _client_model(client, model)
+    resolved_client, resolved_model = _client_model(client, model, EXPLAIN_MODEL_ENV)
     if resolved_client is None or resolved_model is None:
         return _template_explanations(schedules, preferences)
 

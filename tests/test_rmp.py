@@ -4,6 +4,7 @@ No live network calls: refresh uses an injected fake fetcher against a temp DB.
 """
 
 import asyncio
+import base64
 import os
 import sys
 
@@ -21,6 +22,7 @@ from backend.rmp import (  # noqa: E402
     match_professor,
     normalize_course_for_match,
     normalize_person_name,
+    rmp_url_from_id,
 )
 
 
@@ -137,6 +139,43 @@ def test_ease_missing_data_neutral_not_easy():
     score, conf = ease_score(prof(rating=None, diff=None, wta=None, num=10))
     assert score == 50.0
     assert conf < 0.5
+
+
+# ── rmp_url extraction ───────────────────────────────────────────────────────
+
+def _b64id(payload: str) -> str:
+    return base64.b64encode(payload.encode("utf-8")).decode("ascii")
+
+
+def test_rmp_url_valid_id():
+    assert rmp_url_from_id(_b64id("Teacher-1742516")) == (
+        "https://www.ratemyprofessors.com/professor/1742516"
+    )
+
+
+def test_rmp_url_padded_id():
+    # Real stored ids include base64 padding.
+    assert rmp_url_from_id(_b64id("Teacher-511061")) == (
+        "https://www.ratemyprofessors.com/professor/511061"
+    )
+
+
+def test_rmp_url_missing_none():
+    assert rmp_url_from_id(None) is None
+    assert rmp_url_from_id("") is None
+
+
+def test_rmp_url_malformed_base64():
+    assert rmp_url_from_id("not-base64!!!") is None
+    assert rmp_url_from_id("###") is None
+
+
+def test_rmp_url_non_digit_payload():
+    # Decodes to something other than "Teacher-<digits>".
+    assert rmp_url_from_id(_b64id("Teacher-abc")) is None
+    assert rmp_url_from_id(_b64id("School-135")) is None
+    assert rmp_url_from_id(_b64id("Teacher-12-34")) is None
+    assert rmp_url_from_id(_b64id("garbage")) is None
 
 
 # ── Refresh orchestration (mocked, no network) ───────────────────────────────

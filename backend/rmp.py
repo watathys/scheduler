@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import json
 import logging
 import re
@@ -565,6 +566,28 @@ def ease_score(professor: dict) -> tuple[float, float]:
     completeness = total_weight  # full set of weights sums to 1.0
     confidence = min(1.0, float(num) / 30.0) * completeness
     return round(min(100.0, max(0.0, score)), 1), round(min(1.0, max(0.0, confidence)), 3)
+
+
+def rmp_url_from_id(rmp_id: str | None) -> str | None:
+    """Build the public RateMyProfessors profile URL from a stored ``rmp_id``.
+
+    RMP's GraphQL ``id`` is a base64-encoded string that decodes to
+    ``"Teacher-123456"``. We decode it, require exactly that shape with an
+    all-digit numeric id, and only then construct the URL. Any decoding or
+    validation failure returns ``None`` so we never link to an unvalidated id.
+    """
+    if not rmp_id:
+        return None
+    try:
+        # Tolerate missing base64 padding, but validate the alphabet strictly.
+        padded = rmp_id + "=" * (-len(rmp_id) % 4)
+        decoded = base64.b64decode(padded, validate=True).decode("utf-8").strip()
+    except ValueError:  # binascii.Error / UnicodeDecodeError are ValueErrors
+        return None
+    m = re.fullmatch(r"Teacher-([0-9]+)", decoded)
+    if not m:
+        return None
+    return f"https://www.ratemyprofessors.com/professor/{m.group(1)}"
 
 
 # ── Refresh orchestration ────────────────────────────────────────────────────

@@ -23,7 +23,7 @@ from typing import Optional
 import aiosqlite
 
 from . import database, rmp
-from .matching import closest_courses, normalize_course_code
+from .matching import closest_courses, normalize_course_code, title_case_name
 from .models import (
     BottleneckDiagnosis,
     CourseFilterReport,
@@ -43,7 +43,7 @@ GAP_OVER_LIMIT_MIN = 180               # gaps longer than this are penalized har
 NO_GAPS_NORMALIZER_MIN = 720           # effective-gap minutes that map to a 0 score
 _NO_BOUND = 10 ** 9                    # "no earliest/latest bound" sentinel
 
-FILTER_NAMES = ("online", "full", "earliest_latest", "blocked_times")
+FILTER_NAMES = ("online", "days_off", "full", "earliest_latest", "blocked_times")
 RELAXATION_LABELS = [
     "earliest/latest window",
     "blocked times",
@@ -87,6 +87,12 @@ class Section:
     lacks_ratings: bool
     meetings: tuple[Meeting, ...] = ()
     title: Optional[str] = None
+    rmp_id: Optional[str] = None
+    rmp_name: Optional[str] = None
+    avg_rating: Optional[float] = None
+    avg_difficulty: Optional[float] = None
+    would_take_again: Optional[float] = None
+    num_ratings: Optional[int] = None
 
 
 # ── Conflict detection ────────────────────────────────────────────────────────
@@ -163,7 +169,8 @@ async def load_sections(term: str, course_codes: list[str]) -> dict[str, list[Se
             f"""
             SELECT s.id, s.course_code, s.section_number, s.title, s.is_online,
                    s.seats_open, s.instructor_id,
-                   p.byu_name, p.avg_difficulty, p.avg_rating,
+                   p.byu_name, p.rmp_id, p.rmp_name,
+                   p.avg_difficulty, p.avg_rating,
                    p.would_take_again, p.num_ratings
             FROM sections s
             LEFT JOIN professors p ON p.id = s.instructor_id
@@ -222,6 +229,12 @@ async def load_sections(term: str, course_codes: list[str]) -> dict[str, list[Se
             lacks_ratings=lacks,
             meetings=tuple(meetings_by_section.get(r["id"], [])),
             title=r["title"],
+            rmp_id=r["rmp_id"],
+            rmp_name=r["rmp_name"],
+            avg_rating=r["avg_rating"],
+            avg_difficulty=r["avg_difficulty"],
+            would_take_again=r["would_take_again"],
+            num_ratings=r["num_ratings"],
         )
         out.setdefault(r["course_code"], []).append(section)
     return out
@@ -244,17 +257,23 @@ def apply_hard_filters(
     earliest_start_min: int,
     latest_end_min: int,
     blocked_times: list[tuple[str, int, int]],
+    days_off: list[str] | None = None,
 ) -> tuple[list[Section], dict[str, int]]:
     """Remove any section that violates a hard constraint.
 
-    Returns (kept_sections, removed_count_by_filter). Async sections (no
-    meetings) never violate the time/blocked filters.
+    ``days_off`` is a hard constraint: any section with a meeting on a requested
+    off-day is removed. Returns (kept_sections, removed_count_by_filter). Async
+    sections (no meetings) never violate the time/blocked/days-off filters.
     """
+    off_days = {_norm_day(d) for d in (days_off or [])}
     kept: list[Section] = []
     removed = {name: 0 for name in FILTER_NAMES}
     for s in sections:
         if s.is_online and not allow_online:
             removed["online"] += 1
+            continue
+        if off_days and any(m.day in off_days for m in s.meetings):
+            removed["days_off"] += 1
             continue
         if skip_full_sections and s.seats_open == 0:
             removed["full"] += 1
@@ -272,10 +291,61 @@ def apply_hard_filters(
 
 # ── Scoring ───────────────────────────────────────────────────────────────────
 
+def _has_ease_data(s: Section) -> bool:
+    """True when a section's instructor has a confident RMP match with at least
+    one rating — the same bar ``_professor_breakdown`` uses to keep
+    ``data_status`` off ``"none"``.
+
+    Professors with no RateMyProfessors page (or no confident match) have no
+    trustworthy numbers, so they are excluded from the ease average entirely.
+    """
+    return s.num_ratings is not None and s.num_ratings >= 1
+
+
+def _professor_breakdown(s: Section, courses: list[str]) -> dict:
+    """Build one per-instructor breakdown entry from a representative section.
+
+    We only surface RMP numbers we are confident in. Ratings are stored only
+    after a confident match, so a ``NULL`` rating count means "no confident RMP
+    match". A confident match with zero ratings (RMP returns ``0.0``/``-1.0``
+    placeholders) is also treated as "no data": ``data_status`` is ``"none"``
+    and every numeric field is nulled rather than guessed.
+    """
+    num = s.num_ratings
+    if num is None or num < 1:
+        data_status = "none"
+        has_data = False
+    elif num < 3:
+        data_status = "limited"
+        has_data = True
+    else:
+        data_status = "rated"
+        has_data = True
+
+    # Prefer the RMP name when we have data, else the BYU name.
+    if has_data:
+        name_source = s.rmp_name or s.instructor_name
+    else:
+        name_source = s.instructor_name
+    display_name = title_case_name(name_source) or "Unknown instructor"
+
+    return {
+        "display_name": display_name,
+        "courses": sorted(courses),
+        "avg_rating": s.avg_rating if has_data else None,
+        "avg_difficulty": s.avg_difficulty if has_data else None,
+        "would_take_again_percent": s.would_take_again if has_data else None,
+        "num_ratings": num if has_data else None,
+        "rmp_url": rmp.rmp_url_from_id(s.rmp_id) if has_data else None,
+        "ease_score": s.ease_score if has_data else None,
+        "ease_confidence": s.ease_confidence if has_data else None,
+        "data_status": data_status,
+    }
+
+
 def score_schedule(
     sections: list[Section],
     preferences: list[str],
-    days_off: list[str],
 ) -> tuple[float, dict]:
     """Score a complete schedule (0-100) and compute its metrics.
 
@@ -289,14 +359,6 @@ def score_schedule(
     for slots in by_day.values():
         slots.sort()
 
-    # days_off: fraction of requested off-days that have zero meetings.
-    off_set = set(days_off)
-    if off_set:
-        free_days = sum(1 for d in off_set if d not in by_day)
-        days_off_score = (free_days / len(off_set)) * 100.0
-    else:
-        days_off_score = 100.0
-
     # no_gaps: penalize idle minutes between classes; >3h gaps hurt more.
     total_gap = 0
     effective_gap = 0.0
@@ -307,17 +369,36 @@ def score_schedule(
             effective_gap += gap + max(0, gap - GAP_OVER_LIMIT_MIN)
     no_gaps_score = max(0.0, 100.0 * (1.0 - effective_gap / NO_GAPS_NORMALIZER_MIN))
 
-    # easy: average ease over DISTINCT instructors (unknown counts as neutral 50).
+    # easy: average ease over DISTINCT instructors that actually have
+    # RateMyProfessors data. Professors with no RMP page are excluded entirely
+    # rather than folded in as a neutral 50 (which would imply a rating we do
+    # not have and drag the average toward the middle).
     by_instructor: dict[Optional[int], Section] = {}
+    courses_by_instructor: dict[Optional[int], list[str]] = {}
     for s in sections:
         by_instructor.setdefault(s.instructor_id, s)
-    eases = [s.ease_score for s in by_instructor.values()]
-    avg_ease = sum(eases) / len(eases) if eases else 50.0
+        course_list = courses_by_instructor.setdefault(s.instructor_id, [])
+        if s.course_code not in course_list:
+            course_list.append(s.course_code)
+    rated = [s for s in by_instructor.values() if _has_ease_data(s)]
+    avg_ease = (
+        sum(s.ease_score for s in rated) / len(rated) if rated else None
+    )
+
+    # fewer_days: 1 day on campus = 100, 5+ days = 0 (linear in between).
+    days_on_campus = len(by_day)
+    fewer_days_score = (
+        100.0 if days_on_campus <= 1
+        else max(0.0, 100.0 * (1.0 - (days_on_campus - 1) / 4.0))
+    )
 
     components = {
-        "easy": avg_ease,
-        "days_off": days_off_score,
+        # When no instructor has ratings, ease cannot be scored: use a neutral
+        # 50 for ranking so schedules are neither rewarded nor punished for
+        # data we do not have (the metric itself stays None for display).
+        "easy": 50.0 if avg_ease is None else avg_ease,
         "no_gaps": no_gaps_score,
+        "fewer_days": fewer_days_score,
     }
     total = 0.0
     for rank, pref in enumerate(preferences):
@@ -326,15 +407,27 @@ def score_schedule(
     earliest = min(m.start_min for m in meetings) if meetings else None
     latest = max(m.end_min for m in meetings) if meetings else None
 
+    # Per-instructor breakdown (matches the average above exactly, since the
+    # average is computed over these same distinct instructors).
+    ease_breakdown = sorted(
+        (
+            _professor_breakdown(s, courses_by_instructor[s.instructor_id])
+            for s in by_instructor.values()
+        ),
+        key=lambda e: (e["courses"][0] if e["courses"] else "", e["display_name"]),
+    )
+
     metrics = {
         "days_on_campus": len(by_day),
         "total_gap_minutes": total_gap,
-        "average_ease": round(avg_ease, 2),
+        # None means "cannot be calculated": no instructor had ratings data.
+        "average_ease": round(avg_ease, 2) if avg_ease is not None else None,
         "earliest_start": earliest,
         "latest_end": latest,
         "professors_without_ratings": sum(
-            1 for s in by_instructor.values() if s.lacks_ratings
+            1 for s in by_instructor.values() if not _has_ease_data(s)
         ),
+        "ease_breakdown": ease_breakdown,
     }
     return round(total, 3), metrics
 
@@ -394,11 +487,13 @@ def search(
 def _sort_key(item: tuple[float, dict, tuple[Section, ...]]):
     score, metrics, assignment = item
     section_ids = tuple(sorted(s.id for s in assignment))
+    # None ease (no ratings anywhere) sorts as neutral so ordering stays stable.
+    avg_ease = metrics["average_ease"]
     return (
         -score,
         metrics["days_on_campus"],
         metrics["total_gap_minutes"],
-        -metrics["average_ease"],
+        -(50.0 if avg_ease is None else avg_ease),
         section_ids,
     )
 
@@ -427,6 +522,7 @@ def _apply(req: SolverRequest, sections: list[Section],
         earliest_start_min=req.earliest_start_min,
         latest_end_min=req.latest_end_min,
         blocked_times=blocked,
+        days_off=req.days_off,
     )
 
 
@@ -508,6 +604,9 @@ def diagnose_bottleneck(
     for r in no_sections:
         if set(r.removed_by) == {"online"} and not req.allow_online:
             msgs.append(f"{r.course} is online-only but online sections are not allowed")
+        elif "days_off" in r.removed_by and req.days_off:
+            days = ", ".join(req.days_off)
+            msgs.append(f"{r.course} has no sections that avoid {days} (a day you want off)")
         elif r.removed_by:
             msgs.append(f"{r.course} has no sections left after filtering ({_fmt_filters(r.removed_by)})")
     if pairs:
@@ -565,7 +664,6 @@ def _schedule_out(score: float, metrics: dict, assignment: tuple[Section, ...]) 
 
 async def solve_schedule(req: SolverRequest) -> SolverResponse:
     """Build, score, and return up to 3 meaningfully-different schedules."""
-    days_off = [_norm_day(d) for d in req.days_off]
     codes = await _resolve_courses(req.term, req.courses)
     loaded = await load_sections(req.term, codes)
 
@@ -605,7 +703,7 @@ async def solve_schedule(req: SolverRequest) -> SolverResponse:
 
     scored: list[tuple[float, dict, tuple[Section, ...]]] = []
     for assignment in assignments:
-        score, metrics = score_schedule(list(assignment), req.preferences, days_off)
+        score, metrics = score_schedule(list(assignment), req.preferences)
         scored.append((score, metrics, assignment))
 
     scored.sort(key=_sort_key)

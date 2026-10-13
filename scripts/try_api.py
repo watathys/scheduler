@@ -38,7 +38,7 @@ CURL_EXAMPLES = [
         '     -H "Content-Type: application/json" \\\n'
         "     -d '{\n"
         '           "courses": ["MKTG 201", "STRAT 305", "FIN 201"],\n'
-        '           "preferences": ["easy", "days_off", "no_gaps"],\n'
+        '           "preferences": ["easy", "no_gaps"],\n'
         '           "days_off": ["Friday"],\n'
         '           "earliest_start": "08:00",\n'
         '           "latest_end": "22:00",\n'
@@ -92,7 +92,7 @@ def main() -> int:
     # 3. Generate
     r = _call(args.base, "POST", "/api/v1/scheduler/schedules/generate", {
         "courses": ["MKTG 201", "STRAT 305", "FIN 201"],
-        "preferences": ["easy", "days_off", "no_gaps"],
+        "preferences": ["easy", "no_gaps"],
         "days_off": ["Friday"],
         "earliest_start": "08:00",
         "latest_end": "22:00",

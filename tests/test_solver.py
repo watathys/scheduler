@@ -29,12 +29,16 @@ def M(day, start, end, building=None, room=None):
 
 
 def sec(sid, meetings=(), *, is_online=False, seats_open=10, instructor_id=None,
-        name=None, ease=50.0, conf=0.0, lacks=True, code="C", number="001"):
-    """Build a Section for pure-function tests."""
+        name=None, ease=50.0, conf=0.0, lacks=True, code="C", number="001", num=None):
+    """Build a Section for pure-function tests.
+
+    ``num`` is the stored RMP ``num_ratings`` (default ``None`` => no RMP data,
+    matching a professor with no RateMyProfessors page).
+    """
     return Section(id=sid, course_code=code, section_number=number, is_online=is_online,
                    seats_open=seats_open, instructor_id=instructor_id, instructor_name=name,
                    ease_score=ease, ease_confidence=conf, lacks_ratings=lacks,
-                   meetings=tuple(meetings), title=None)
+                   meetings=tuple(meetings), title=None, num_ratings=num)
 
 
 # ── DB fixture & seeding helpers ─────────────────────────────────────────────
@@ -74,7 +78,7 @@ def add_section(code, number, meetings=(), *, is_online=False, seats_open=10,
 
 
 def solve(**kw):
-    defaults = dict(term=TERM, courses=[], preferences=["easy", "days_off", "no_gaps"])
+    defaults = dict(term=TERM, courses=[], preferences=["easy", "no_gaps"])
     defaults.update(kw)
     return asyncio.run(solve_schedule(SolverRequest(**defaults)))
 
@@ -178,37 +182,69 @@ def test_filter_full_sections():
 # ── Scoring order per preference rank ────────────────────────────────────────
 
 def test_scoring_easy_rank1_prefers_higher_ease():
-    prefs = ["easy", "days_off", "no_gaps"]
-    high = score_schedule([sec(1, [M("Monday", 480, 540)], ease=90.0)], prefs, ["Friday"])
-    low = score_schedule([sec(2, [M("Monday", 480, 540)], ease=50.0)], prefs, ["Friday"])
+    prefs = ["easy", "no_gaps"]
+    # A professor only counts toward ease when they have RMP data (num >= 1).
+    high = score_schedule(
+        [sec(1, [M("Monday", 480, 540)], ease=90.0, num=50, instructor_id=1)], prefs)
+    low = score_schedule(
+        [sec(2, [M("Monday", 480, 540)], ease=50.0, num=50, instructor_id=2)], prefs)
     assert high[0] > low[0]
 
 
-def test_scoring_days_off_rank1_prefers_free_day():
-    prefs = ["days_off", "easy", "no_gaps"]
-    busy_friday = score_schedule([sec(1, [M("Friday", 480, 540)])], prefs, ["Friday"])
-    free_friday = score_schedule([sec(2, [M("Monday", 480, 540)])], prefs, ["Friday"])
-    assert free_friday[0] > busy_friday[0]
+def test_ease_excludes_professors_without_rmp_pages():
+    # Two distinct instructors: one rated, one with no RMP page. The unrated
+    # professor must not drag the average toward the neutral 50.
+    _, metrics = score_schedule(
+        [
+            sec(1, [M("Monday", 480, 540)], ease=80.0, num=50, instructor_id=1),
+            sec(2, [M("Monday", 600, 660)], ease=50.0, num=None, instructor_id=2),
+        ],
+        ["easy", "no_gaps"],
+    )
+    assert metrics["average_ease"] == 80.0
+    assert metrics["professors_without_ratings"] == 1
+    # The unrated professor still appears in the breakdown as data_status "none".
+    statuses = {b["data_status"] for b in metrics["ease_breakdown"]}
+    assert statuses == {"rated", "none"}
+
+
+def test_ease_unavailable_when_no_professor_has_ratings():
+    # Every instructor lacks an RMP page -> ease cannot be calculated.
+    score, metrics = score_schedule(
+        [
+            sec(1, [M("Monday", 480, 540)], ease=50.0, num=None, instructor_id=1),
+            sec(2, [M("Monday", 600, 660)], ease=50.0, num=None, instructor_id=2),
+        ],
+        ["easy", "no_gaps"],
+    )
+    assert metrics["average_ease"] is None
+    assert metrics["professors_without_ratings"] == 2
+    assert all(b["data_status"] == "none" for b in metrics["ease_breakdown"])
+    # Scoring still produces a finite result using the neutral easy component.
+    assert score == score  # not NaN
+    assert 0.0 <= score <= 100.0
 
 
 def test_scoring_no_gaps_rank1_prefers_fewer_gaps():
-    prefs = ["no_gaps", "easy", "days_off"]
+    prefs = ["no_gaps", "easy"]
     gappy = score_schedule(
         [sec(1, [M("Monday", 480, 540)]), sec(2, [M("Monday", 660, 720)])],
-        prefs, ["Friday"],
+        prefs,
     )
     tight = score_schedule(
         [sec(3, [M("Monday", 480, 540)]), sec(4, [M("Monday", 540, 600)])],
-        prefs, ["Friday"],
+        prefs,
     )
     assert tight[0] > gappy[0]
 
 
-def test_days_off_is_soft_not_hard(db):
+def test_days_off_is_hard(db):
     add_section("MKTG 201", "001", [M("Friday", 480, 540)])
     res = solve(courses=["MKTG 201"], days_off=["Friday"])
-    assert len(res.schedules) == 1
-    assert res.schedules[0].metrics.days_on_campus == 1
+    assert res.schedules == []
+    assert res.bottleneck is not None
+    assert res.bottleneck.no_sections[0].course == "MKTG 201"
+    assert res.bottleneck.no_sections[0].removed_by.get("days_off") == 1
 
 
 # ── Search cap ───────────────────────────────────────────────────────────────
@@ -370,3 +406,13 @@ def test_performance_8_courses_x_15_sections(db):
 
     assert len(res.schedules) == 3
     assert elapsed < 8.0
+
+
+def test_scoring_fewer_days_rank1_prefers_fewer_campus_days():
+    prefs = ["fewer_days", "easy", "no_gaps"]
+    compact = score_schedule(
+        [sec(1, [M("Monday", 480, 540)]), sec(2, [M("Monday", 540, 600)])], prefs)
+    spread = score_schedule(
+        [sec(3, [M("Monday", 480, 540)]), sec(4, [M("Wednesday", 480, 540)])], prefs)
+    assert compact[0] > spread[0]
+    assert compact[1]["days_on_campus"] == 1 and spread[1]["days_on_campus"] == 2

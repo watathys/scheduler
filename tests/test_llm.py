@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend import llm  # noqa: E402
 from backend.models import ScheduleMetrics, ScheduleOut  # noqa: E402
 
-PREFS = ["easy", "days_off", "no_gaps"]
+PREFS = ["easy", "no_gaps"]
 
 
 # ── Fakes ────────────────────────────────────────────────────────────────────
@@ -191,7 +191,7 @@ def test_explain_count_mismatch_falls_back_to_templates():
     assert len(out) == 3
     # Template output is deterministic and mentions concrete metrics.
     assert out[0].startswith("Schedule 1")
-    assert "days on campus" in out[0] or "on campus" in out[0]
+    assert "gaps" in out[0] and "ease score" in out[0]
     assert "72.0" in out[0]  # average ease from the fixture
 
 
@@ -204,7 +204,6 @@ def test_explain_uses_only_facts_prompt():
     assert "Never invent professors" in system
     assert "only the facts" in system
     # The user message carries only structured facts, not course details.
-    assert "days_on_campus" in user
     assert "professors_without_ratings" in user
 
 
@@ -322,7 +321,90 @@ def test_missing_api_key_parse_falls_back(monkeypatch):
 def test_missing_api_key_explain_falls_back(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_MODEL", raising=False)
+    monkeypatch.delenv("OPENAI_PARSE_MODEL", raising=False)
+    monkeypatch.delenv("OPENAI_EXPLAIN_MODEL", raising=False)
     scheds = [make_sched(1), make_sched(2)]
     out = run(llm.explain_schedules(scheds, PREFS, client=None, model=None))
     assert len(out) == 2
     assert out[0].startswith("Schedule 1")
+
+
+# ── Per-job model env vars (OPENAI_PARSE_MODEL / OPENAI_EXPLAIN_MODEL) ───────
+
+@pytest.fixture()
+def clean_model_env(monkeypatch):
+    """Clear every model var so each test controls the fallback chain."""
+    for var in ("OPENAI_MODEL", "OPENAI_PARSE_MODEL", "OPENAI_EXPLAIN_MODEL"):
+        monkeypatch.delenv(var, raising=False)
+
+
+def test_env_model_resolution_order(monkeypatch, clean_model_env):
+    # No vars at all -> LLM disabled.
+    assert llm._env_model(llm.PARSE_MODEL_ENV) is None
+    assert llm._env_model(llm.EXPLAIN_MODEL_ENV) is None
+    # Job-specific var wins over the shared default.
+    monkeypatch.setenv("OPENAI_MODEL", "shared")
+    assert llm._env_model(llm.PARSE_MODEL_ENV) == "shared"
+    monkeypatch.setenv("OPENAI_PARSE_MODEL", "parse-only")
+    assert llm._env_model(llm.PARSE_MODEL_ENV) == "parse-only"
+    assert llm._env_model(llm.EXPLAIN_MODEL_ENV) == "shared"
+
+
+def test_parse_uses_parse_model_env(monkeypatch, clean_model_env):
+    monkeypatch.setenv("OPENAI_MODEL", "shared-model")
+    monkeypatch.setenv("OPENAI_PARSE_MODEL", "parse-model")
+    client = FakeClient([resp(valid_constraints_json())])
+    run(llm.parse_constraints("no classes Tuesday", client=client, model=None))
+    assert client.calls[0]["model"] == "parse-model"
+
+
+def test_parse_falls_back_to_shared_model(monkeypatch, clean_model_env):
+    monkeypatch.setenv("OPENAI_MODEL", "shared-model")
+    client = FakeClient([resp(valid_constraints_json())])
+    run(llm.parse_constraints("no classes Tuesday", client=client, model=None))
+    assert client.calls[0]["model"] == "shared-model"
+
+
+def test_explain_uses_explain_model_env(monkeypatch, clean_model_env):
+    monkeypatch.setenv("OPENAI_MODEL", "shared-model")
+    monkeypatch.setenv("OPENAI_EXPLAIN_MODEL", "explain-model")
+    client = FakeClient([resp(json.dumps({"explanations": ["x"]}))])
+    run(llm.explain_schedules([make_sched(1)], PREFS, client=client, model=None))
+    assert client.calls[0]["model"] == "explain-model"
+
+
+def test_explain_falls_back_to_shared_model(monkeypatch, clean_model_env):
+    monkeypatch.setenv("OPENAI_MODEL", "shared-model")
+    client = FakeClient([resp(json.dumps({"explanations": ["x"]}))])
+    run(llm.explain_schedules([make_sched(1)], PREFS, client=client, model=None))
+    assert client.calls[0]["model"] == "shared-model"
+
+
+def test_job_specific_vars_do_not_leak(monkeypatch, clean_model_env):
+    # A parse-only override must not affect explanations, and vice versa.
+    monkeypatch.setenv("OPENAI_PARSE_MODEL", "parse-model")
+    monkeypatch.setenv("OPENAI_EXPLAIN_MODEL", "explain-model")
+    parse_client = FakeClient([resp(valid_constraints_json())])
+    run(llm.parse_constraints("no classes Tuesday", client=parse_client, model=None))
+    assert parse_client.calls[0]["model"] == "parse-model"
+
+    explain_client = FakeClient([resp(json.dumps({"explanations": ["x"]}))])
+    run(llm.explain_schedules([make_sched(1)], PREFS, client=explain_client, model=None))
+    assert explain_client.calls[0]["model"] == "explain-model"
+
+
+def test_explicit_model_argument_beats_env(monkeypatch, clean_model_env):
+    monkeypatch.setenv("OPENAI_MODEL", "shared-model")
+    monkeypatch.setenv("OPENAI_PARSE_MODEL", "parse-model")
+    client = FakeClient([resp(valid_constraints_json())])
+    run(llm.parse_constraints("no classes Tuesday", client=client, model="explicit"))
+    assert client.calls[0]["model"] == "explicit"
+
+
+def test_no_model_configured_disables_llm(monkeypatch, clean_model_env):
+    # Only the key is set: without any model var the LLM stays off and the
+    # code falls back rather than inventing a default model name.
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    result = run(llm.parse_constraints("no classes Tuesday", client=None, model=None))
+    assert result.blocked_times == []
+    assert result.warning is not None

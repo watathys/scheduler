@@ -1,73 +1,24 @@
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import Optional
-
-VALID_DAYS = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
-
-
-class BuildingInfo(BaseModel):
-    code: str
-    display_name: str
-    rooms_cached: int
-    last_crawled: Optional[str] = None
-
-
-class RoomInfo(BaseModel):
-    building: str
-    room_number: str
-    description: Optional[str] = None
-    capacity: Optional[int] = None
-    discovered_at: str
-
-
-class SearchRequest(BaseModel):
-    buildings: list[str] = Field(..., min_length=1)
-    day: str
-    start_time: str  # "HH:MM" 24-hr
-    end_time: str    # "HH:MM" 24-hr
-
-
-class FreeWindow(BaseModel):
-    start_time: str       # "HH:MM" 24-hr
-    end_time: str         # "HH:MM" 24-hr
-    duration_minutes: int
-
-
-class FreeRoom(BaseModel):
-    building: str
-    room_number: str
-    description: Optional[str] = None
-    capacity: Optional[int] = None
-    is_fully_free: bool
-    free_windows: list[FreeWindow]
-    longest_free_minutes: int
-
-
-class SearchResponse(BaseModel):
-    rooms: list[FreeRoom]
-    searched_buildings: list[str]
-    day: str
-    start_time: str
-    end_time: str
-    total_rooms_checked: int
-
-
-class DiscoveryStatus(BaseModel):
-    building: str
-    status: str  # 'running' | 'done' | 'error' | 'not_started'
-    rooms_found: int
-    started_at: Optional[str] = None
-    finished_at: Optional[str] = None
-
-
-class CacheStats(BaseModel):
-    total_buildings_crawled: int
-    total_rooms_cached: int
-    buildings: list[DiscoveryStatus]
+from typing import Literal, Optional
 
 
 # ── Schedule builder: solver request/response models ─────────────────────────
 
-VALID_PREFERENCES = {"easy", "days_off", "no_gaps"}
+VALID_PREFERENCES = {"easy", "no_gaps", "fewer_days"}
+PREFERENCE_ORDER = ["easy", "no_gaps", "fewer_days"]
+
+
+def normalize_preferences(v: list[str]) -> list[str]:
+    """Validate a ranked preference list; any omitted preference is appended
+    at the lowest ranks so older 2-item clients keep working."""
+    if len(set(v)) != len(v):
+        raise ValueError("preferences must be distinct values")
+    bad = [p for p in v if p not in VALID_PREFERENCES]
+    if bad:
+        raise ValueError(f"unknown preference(s): {bad} (allowed: {sorted(VALID_PREFERENCES)})")
+    if len(v) < 2:
+        raise ValueError("preferences must contain 2 or 3 ranked values")
+    return list(v) + [p for p in PREFERENCE_ORDER if p not in v]
 
 
 class BlockedTime(BaseModel):
@@ -90,14 +41,7 @@ class SolverRequest(BaseModel):
     @field_validator("preferences")
     @classmethod
     def _validate_preferences(cls, v: list[str]) -> list[str]:
-        if len(v) != 3:
-            raise ValueError("preferences must contain exactly 3 values (ranked 1..3)")
-        if len(set(v)) != 3:
-            raise ValueError("preferences must be 3 distinct values")
-        bad = [p for p in v if p not in VALID_PREFERENCES]
-        if bad:
-            raise ValueError(f"unknown preference(s): {bad} (allowed: {sorted(VALID_PREFERENCES)})")
-        return v
+        return normalize_preferences(v)
 
     @model_validator(mode="after")
     def _validate_window(self):
@@ -127,13 +71,38 @@ class SectionOut(BaseModel):
     meetings: list[MeetingOut] = Field(default_factory=list)
 
 
+class ProfessorBreakdown(BaseModel):
+    """Per-instructor breakdown for the "why ease is N" panel.
+
+    ``data_status`` gates what numbers we are willing to show a student:
+
+    * ``"rated"``   — a confident RMP match with >= 3 ratings; show all numbers.
+    * ``"limited"`` — a confident match but fewer than 3 ratings; numbers are
+      real but thin.
+    * ``"none"``    — no confident RMP match; every numeric field is ``null``.
+    """
+    display_name: str
+    courses: list[str] = Field(default_factory=list)
+    avg_rating: Optional[float] = None
+    avg_difficulty: Optional[float] = None
+    would_take_again_percent: Optional[float] = None
+    num_ratings: Optional[int] = None
+    rmp_url: Optional[str] = None
+    ease_score: Optional[float] = None
+    ease_confidence: Optional[float] = None
+    data_status: Literal["rated", "limited", "none"]
+
+
 class ScheduleMetrics(BaseModel):
     days_on_campus: int
     total_gap_minutes: int
-    average_ease: float
+    # None when no instructor has RateMyProfessors data, so ease cannot be
+    # calculated for this schedule.
+    average_ease: Optional[float] = None
     earliest_start: Optional[int] = None
     latest_end: Optional[int] = None
     professors_without_ratings: int
+    ease_breakdown: list[ProfessorBreakdown] = Field(default_factory=list)
 
 
 class ScheduleOut(BaseModel):
@@ -202,14 +171,7 @@ class GenerateRequest(BaseModel):
     @field_validator("preferences")
     @classmethod
     def _validate_preferences(cls, v: list[str]) -> list[str]:
-        if len(v) != 3:
-            raise ValueError("preferences must contain exactly 3 values (ranked 1..3)")
-        if len(set(v)) != 3:
-            raise ValueError("preferences must be 3 distinct values")
-        bad = [p for p in v if p not in VALID_PREFERENCES]
-        if bad:
-            raise ValueError(f"unknown preference(s): {bad} (allowed: {sorted(VALID_PREFERENCES)})")
-        return v
+        return normalize_preferences(v)
 
     @field_validator("days_off")
     @classmethod

@@ -1,14 +1,14 @@
-"""Tests for the scheduler API router (Step 5).
+"""Tests for the scheduler API router.
 
-No network: the app lifespan's calendar fetch is monkeypatched, background
-jobs are disabled, and the LLM key is removed so parse/explain use their
-deterministic fallbacks. A temp SQLite DB backs every test.
+No network: background jobs are disabled and the LLM key is removed so
+parse/explain use their deterministic fallbacks. A temp SQLite DB backs every
+test.
 """
 
 import asyncio
+import base64
 import os
 import sys
-from contextlib import asynccontextmanager
 
 import pytest
 from fastapi.testclient import TestClient
@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import backend.main as main  # noqa: E402
-from backend import database, mcp_server, scheduler_api  # noqa: E402
+from backend import database, scheduler_api  # noqa: E402
 from backend.config import settings  # noqa: E402
 
 TERM = "20271"
@@ -34,22 +34,8 @@ def client(tmp_path, monkeypatch):
 
     db_path = str(tmp_path / "scheduler_api_test.db")
     monkeypatch.setattr(database, "DB", db_path)
-    monkeypatch.setattr(settings, "db_path", db_path)  # availability.* uses this
+    monkeypatch.setattr(settings, "db_path", db_path)
     monkeypatch.setattr(settings, "current_term", TERM)
-
-    # The lifespan scrapes BYU's calendar on first run; stub it out.
-    async def fake_fetch_semester_starts(years_ahead=2):
-        return []
-
-    monkeypatch.setattr(main, "fetch_semester_starts", fake_fetch_semester_starts)
-
-    # The MCP StreamableHTTPSessionManager can only be started once per process,
-    # which breaks re-running the lifespan for every test. Stub it out.
-    @asynccontextmanager
-    async def _noop_session_manager():
-        yield
-
-    monkeypatch.setattr(mcp_server.mcp.session_manager, "run", _noop_session_manager)
 
     # Rate limiter state is global; start each test clean.
     scheduler_api._generate_rate.clear()
@@ -58,12 +44,14 @@ def client(tmp_path, monkeypatch):
         yield c
 
 
-def _seed_prof(name, *, rating=None, diff=None, wta=None, num=None):
+def _seed_prof(name, *, rating=None, diff=None, wta=None, num=None,
+               rmp_id=None, rmp_name=None):
     async def run():
         pid = await database.upsert_professor(f"person-{name}", name)
         if num is not None:
             await database.update_professor_ratings(
-                pid, f"rmp-{name}", name, diff, rating, wta, num, 1.0
+                pid, rmp_id or f"rmp-{name}", rmp_name or name,
+                diff, rating, wta, num, 1.0,
             )
         return pid
     return asyncio.run(run())
@@ -90,7 +78,7 @@ def M(day, start, end, building="TNRB", room="101"):
 def _generate(client, **overrides):
     body = {
         "courses": ["MKTG 201", "STRAT 305"],
-        "preferences": ["easy", "days_off", "no_gaps"],
+        "preferences": ["easy", "no_gaps"],
         "days_off": ["Friday"],
         "earliest_start": "08:00",
         "latest_end": "22:00",
@@ -177,6 +165,126 @@ def test_generate_happy_path(client):
     assert sched["explanation"]  # fallback template (no LLM key)
 
 
+# ── Per-professor breakdown ──────────────────────────────────────────────────
+
+def _breakdown(client, courses):
+    body = _generate(client, courses=courses)
+    assert body.status_code == 200
+    sched = body.json()["schedules"][0]
+    return sched["metrics"]["ease_breakdown"]
+
+
+def test_breakdown_rated_professor_has_rmp_stats_and_url(client):
+    rmp_id = base64.b64encode(b"Teacher-1742516").decode()
+    pid = _seed_prof("mike taylor", rating=4.2, diff=3.5, wta=92.8571, num=50,
+                     rmp_id=rmp_id, rmp_name="Michael Taylor")
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)],
+                  instructor_id=pid, title="Marketing")
+
+    rows = _breakdown(client, ["MKTG 201"])
+    assert len(rows) == 1
+    p = rows[0]
+    assert p["display_name"] == "Michael Taylor"   # prefers RMP name over BYU
+    assert p["courses"] == ["MKTG 201"]
+    assert p["avg_rating"] == 4.2
+    assert p["avg_difficulty"] == 3.5
+    assert p["would_take_again_percent"] == 92.8571
+    assert p["num_ratings"] == 50
+    assert p["rmp_url"] == "https://www.ratemyprofessors.com/professor/1742516"
+    assert p["data_status"] == "rated"
+    assert p["ease_score"] > 50
+
+
+def test_breakdown_none_professor_has_null_stats(client):
+    pid = _seed_prof("heidi dixon")  # no ratings stored -> no confident match
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)], instructor_id=pid)
+
+    rows = _breakdown(client, ["MKTG 201"])
+    assert len(rows) == 1
+    p = rows[0]
+    assert p["data_status"] == "none"
+    assert p["display_name"] == "Heidi Dixon"
+    assert p["avg_rating"] is None
+    assert p["avg_difficulty"] is None
+    assert p["would_take_again_percent"] is None
+    assert p["num_ratings"] is None
+    assert p["rmp_url"] is None
+    assert p["ease_score"] is None
+    assert p["ease_confidence"] is None
+
+
+def test_breakdown_limited_boundary_at_three_ratings(client):
+    # Exactly 3 ratings is the cutoff between "limited" and "rated".
+    pid3 = _seed_prof("three rated", rating=4.0, diff=3.0, wta=80.0, num=3)
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)], instructor_id=pid3)
+    row3 = _breakdown(client, ["MKTG 201"])[0]
+    assert row3["data_status"] == "rated"
+    assert row3["num_ratings"] == 3
+    assert row3["avg_rating"] == 4.0
+
+    # Two ratings is "limited": numbers are real but flagged thin.
+    pid2 = _seed_prof("two rated", rating=4.9, diff=1.7, wta=100.0, num=2)
+    _seed_section("FIN 201", "001", [M("Monday", 600, 660)], instructor_id=pid2)
+    row2 = _breakdown(client, ["FIN 201"])[0]
+    assert row2["data_status"] == "limited"
+    assert row2["num_ratings"] == 2
+    assert row2["avg_rating"] == 4.9
+
+
+def test_breakdown_zero_ratings_is_none(client):
+    # A confident match with zero ratings carries no trustworthy numbers.
+    pid = _seed_prof("jim allison", rating=0.0, diff=0.0, wta=-1.0, num=0,
+                     rmp_name="Jim Allison")
+    _seed_section("ANTHR 402", "001", [M("Monday", 480, 540)], instructor_id=pid)
+    row = _breakdown(client, ["ANTHR 402"])[0]
+    assert row["data_status"] == "none"
+    assert row["avg_rating"] is None
+    assert row["num_ratings"] is None
+    assert row["rmp_url"] is None
+
+
+def test_breakdown_invalid_rmp_id_gives_null_url(client):
+    pid = _seed_prof("jane roe", rating=4.0, diff=2.5, wta=70.0, num=10,
+                     rmp_id="not-valid-base64!!!", rmp_name="Jane Roe")
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)], instructor_id=pid)
+    row = _breakdown(client, ["MKTG 201"])[0]
+    assert row["data_status"] == "rated"
+    assert row["rmp_url"] is None
+
+
+# ── Schedule-wide ease average ────────────────────────────────────────────────
+
+def test_average_ease_null_when_no_professor_has_ratings(client):
+    # Every instructor lacks an RMP page -> ease cannot be calculated.
+    pid = _seed_prof("heidi dixon")
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)], instructor_id=pid)
+    _seed_section("STRAT 305", "001", [M("Monday", 600, 660)], instructor_id=pid)
+
+    r = _generate(client)
+    assert r.status_code == 200
+    metrics = r.json()["schedules"][0]["metrics"]
+    assert metrics["average_ease"] is None
+    assert metrics["professors_without_ratings"] == 1
+
+
+def test_average_ease_excludes_professors_without_rmp_pages(client):
+    # One rated professor (ease 78) and one with no RMP page: the unrated
+    # instructor must not drag the average toward the neutral 50.
+    rated = _seed_prof("mike taylor", rating=4.0, diff=2.0, wta=90.0, num=50,
+                       rmp_name="Michael Taylor")
+    unrated = _seed_prof("heidi dixon")
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)], instructor_id=rated)
+    _seed_section("STRAT 305", "001", [M("Monday", 600, 660)], instructor_id=unrated)
+
+    r = _generate(client)
+    assert r.status_code == 200
+    metrics = r.json()["schedules"][0]["metrics"]
+    assert metrics["average_ease"] == 78.0
+    assert metrics["professors_without_ratings"] == 1
+    statuses = sorted(p["data_status"] for p in metrics["ease_breakdown"])
+    assert statuses == ["none", "rated"]
+
+
 # ── Generate: error / fallback paths ─────────────────────────────────────────
 
 def test_generate_unknown_course_returns_suggestions(client):
@@ -204,7 +312,7 @@ def test_generate_no_schedule_returns_diagnosis(client):
 
 def test_generate_invalid_preferences_422(client):
     _seed_section("MKTG 201", "001", [M("Monday", 480, 540)])
-    r = _generate(client, preferences=["easy", "easy", "no_gaps"])
+    r = _generate(client, preferences=["easy", "easy"])
     assert r.status_code == 422
 
 
@@ -316,14 +424,3 @@ def test_empty_db_returns_503_data_loading(client):
 
     s = client.get("/api/v1/scheduler/status")
     assert s.json()["status"] == "loading"
-
-
-# ── Existing room-finder endpoints still respond ─────────────────────────────
-
-def test_room_finder_endpoints_still_respond(client):
-    assert client.get("/api/v1/buildings").status_code == 200
-    assert client.get("/api/status").status_code == 200
-    assert client.get("/api/buildings").status_code == 200
-    assert client.get(
-        "/api/v1/rooms/available", params={"start": "15:00", "duration": 60}
-    ).status_code == 200

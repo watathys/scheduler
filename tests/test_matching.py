@@ -12,6 +12,7 @@ from backend.matching import (  # noqa: E402
     normalize_course_code,
     normalize_name,
     parse_course_code,
+    title_case_name,
 )
 
 
@@ -72,3 +73,31 @@ def test_normalize_name_for_rmp_key():
     # Idempotent + consistent: same person, same key regardless of spacing/case.
     assert normalize_name("John Doe") == normalize_name(" JOHN  doe ")
     assert normalize_name(normalize_name("John Doe")) == "john doe"
+
+
+def test_title_case_name_basic():
+    assert title_case_name("heidi dixon") == "Heidi Dixon"
+    assert title_case_name("  sarah   smith ") == "Sarah Smith"
+
+
+def test_title_case_name_mc_prefix():
+    assert title_case_name("mcdonald") == "McDonald"
+    assert title_case_name("mccarthy") == "McCarthy"
+    assert title_case_name("macdonald") == "MacDonald"
+
+
+def test_title_case_name_apostrophe():
+    assert title_case_name("o'brien") == "O'Brien"
+    assert title_case_name("d'angelo") == "D'Angelo"
+
+
+def test_title_case_name_hyphen_and_particles():
+    assert title_case_name("de la cruz") == "De La Cruz"
+    assert title_case_name("jean-luc") == "Jean-Luc"
+    assert title_case_name("van der berg") == "Van Der Berg"
+
+
+def test_title_case_name_empty_and_none():
+    assert title_case_name(None) == ""
+    assert title_case_name("") == ""
+    assert title_case_name("   ") == ""

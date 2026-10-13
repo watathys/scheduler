@@ -54,7 +54,7 @@ async def main() -> int:
     parser.add_argument("--courses", nargs="*", default=DEFAULT_COURSES,
                         help="courses to solve when --explain (default sample set)")
     parser.add_argument("--term", default=None, help="BYU term code (default: latest in DB)")
-    parser.add_argument("--prefs", nargs=3, default=["easy", "days_off", "no_gaps"],
+    parser.add_argument("--prefs", nargs="+", default=["easy", "no_gaps", "fewer_days"],
                         help="ranked preferences")
     args = parser.parse_args()
 

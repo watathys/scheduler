@@ -53,6 +53,46 @@ def normalize_name(raw: str) -> str:
     return " ".join(_NON_ALNUM.sub(" ", raw).lower().split())
 
 
+def _title_word(word: str) -> str:
+    """Title-case a single name word, handling Mc/Mac prefixes."""
+    if not word:
+        return word
+    w = word.lower()
+    if w.startswith("mc") and len(w) > 2:
+        return "Mc" + w[2:].capitalize()
+    if w.startswith("mac") and len(w) > 4:
+        return "Mac" + w[3:].capitalize()
+    return w.capitalize()
+
+
+def title_case_name(raw: str | None) -> str:
+    """Sensible title case for a person's display name.
+
+    Keeps it simple and predictable rather than implementing a full proper-name
+    lexicon: each whitespace-, hyphen-, or apostrophe-separated part is
+    capitalized, with a small fix-up for common Mc/Mac surnames.
+
+    Examples
+        "heidi dixon" -> "Heidi Dixon"
+        "mcdonald"    -> "McDonald"
+        "o'brien"     -> "O'Brien"
+        "de la cruz"  -> "De La Cruz"
+        "jean-luc"    -> "Jean-Luc"
+    """
+    if not raw or not raw.strip():
+        return ""
+    tokens: list[str] = []
+    for token in raw.split():
+        parts: list[str] = []
+        for part in re.split(r"([-'])", token):
+            if part in ("-", "'"):
+                parts.append(part)
+            elif part:
+                parts.append(_title_word(part))
+        tokens.append("".join(parts))
+    return " ".join(tokens)
+
+
 def closest_courses(
     query: str, candidates: list[str], limit: int = 5
 ) -> list[tuple[str, int]]:

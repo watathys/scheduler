@@ -2,7 +2,7 @@
 
 Usage (DB_PATH points at the populated SQLite DB):
     python scripts/try_solver.py MKTG201 STRAT305 \
-        --earliest 9:00 --latest 17:00 --prefs easy days_off no_gaps
+        --earliest 9:00 --latest 17:00 --prefs easy no_gaps
 
 Extra options:
     --term 20271                BYU term code (default: settings.current_term)
@@ -121,8 +121,8 @@ async def main() -> int:
     parser.add_argument("--term", default=None, help="BYU term code (default: latest in DB)")
     parser.add_argument("--earliest", default="7:00", help="earliest class start (HH:MM)")
     parser.add_argument("--latest", default="22:00", help="latest class end (HH:MM)")
-    parser.add_argument("--prefs", nargs=3, default=["easy", "days_off", "no_gaps"],
-                        help="three ranked preferences from easy/days_off/no_gaps")
+    parser.add_argument("--prefs", nargs="+", default=["easy", "no_gaps", "fewer_days"],
+                        help="two ranked preferences from easy/no_gaps")
     parser.add_argument("--days-off", nargs="*", default=["Friday"],
                         help="weekdays you want free (default: Friday)")
     parser.add_argument("--allow-online", action="store_true", help="allow online/remote sections")
