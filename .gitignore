@@ -1,4 +1,5 @@
 data/*.db
+!data/seed.db
 __pycache__/
 *.pyc
 *.pyo

@@ -50,6 +50,11 @@ def job_progress(name: str) -> dict | None:
 
 
 def background_jobs_disabled() -> bool:
+    # Serverless hosts (Vercel sets VERCEL=1) have no long-lived process, so the
+    # background scrape/RMP loops can never run. Data is pre-scraped into a
+    # committed seed DB instead (see backend.database.restore_seed_db).
+    if os.getenv("VERCEL"):
+        return True
     return os.getenv("DISABLE_BACKGROUND_JOBS", "").strip().lower() in (
         "1", "true", "yes", "on",
     )

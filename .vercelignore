@@ -1,0 +1,21 @@
+# Vercel upload exclusions. When present this replaces .gitignore for the
+# deploy, so it must stay in sync with .gitignore — except that data/seed.db
+# is deliberately NOT excluded: it ships with the function as the pre-scraped
+# database the app restores into /tmp at cold start.
+.env
+.env.*
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+.DS_Store
+.git/
+.gitignore
+.vercelignore
+scheduler.db
+data/freeroomfinder.db
+tests/
+scripts/

@@ -1,6 +1,8 @@
 import asyncio
 import json
+import logging
 import os
+import shutil
 
 import aiosqlite
 from datetime import datetime, timezone
@@ -8,7 +10,17 @@ from typing import Optional
 from .config import settings
 from .matching import normalize_name
 
+logger = logging.getLogger("freeroomfinder.database")
+
 DB = settings.db_path
+
+# Committed pre-scraped seed DB. Generated once per semester on a local machine
+# (``python -m backend.section_scraper`` then ``python -m backend.rmp``), then
+# committed to git so read-only/serverless hosts (Vercel) can boot from a fully
+# populated database without scraping. See ``restore_seed_db``.
+SEED_DB_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "data", "seed.db")
+)
 
 # Serializes professor upserts. The section scraper persists courses
 # concurrently, and two courses taught by the same person can otherwise race
@@ -131,8 +143,44 @@ CREATE TABLE IF NOT EXISTS envelope_sources (
 """
 
 
+def restore_seed_db() -> None:
+    """Restore the committed seed DB into place when the live DB is missing.
+
+    Only active on Vercel (where ``VERCEL=1`` and ``DB_PATH`` points at a
+    writable-but-ephemeral ``/tmp`` path). Gating on the Vercel signal rather
+    than ``DISABLE_BACKGROUND_JOBS`` keeps local dev and the test suite (which
+    also disable background jobs but use their own fresh DBs) untouched.
+
+    No-op unless all of these hold: we're on Vercel, the seed file exists, the
+    live DB does not yet exist, and they are different files. This lets a cold
+    start boot instantly from a fully populated database instead of scraping.
+
+    Raises on a copy failure (only when a seed is actually available), so a
+    broken serverless boot fails loudly instead of silently serving "loading".
+    """
+    if not os.getenv("VERCEL"):
+        return
+    live = os.path.abspath(DB)
+    if not os.path.exists(SEED_DB_PATH):
+        return
+    if os.path.exists(live):
+        return
+    if os.path.abspath(SEED_DB_PATH) == live:
+        return
+    parent = os.path.dirname(live)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    try:
+        shutil.copyfile(SEED_DB_PATH, live)
+        logger.info("restored seed DB: %s -> %s", SEED_DB_PATH, live)
+    except OSError:
+        logger.exception("failed to restore seed DB %s -> %s", SEED_DB_PATH, live)
+        raise
+
+
 async def init_schedule_db() -> None:
     """Create the schedule-builder tables (idempotent), then migrate."""
+    restore_seed_db()
     async with aiosqlite.connect(DB) as db:
         await db.executescript(SB_SCHEMA_SQL)
         await db.commit()
