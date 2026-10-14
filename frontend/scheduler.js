@@ -41,7 +41,7 @@ const EASE_FORMULA = "Ease is a 0–100 score. 50% comes from difficulty (easier
 const state = {
   step: 0,
   maxReached: 0,
-  courses: [],            // [{code, title, credits, section_count}]
+  courses: [],            // [{code, title, credits, section_count, instructor, professors, hasOnline}]
   envelopes: [],          // [{slug, title, courses, ok_bundles}]
   preferences: DEFAULT_PREFS.slice(),  // rank 1..3
   daysOff: ["Friday"],
@@ -171,7 +171,7 @@ function showStep(index) {
 }
 
 function renderDynamicStep(index) {
-  if (index === 0) renderChips();
+  if (index === 0) renderCourseList();
   if (index === 1) renderPreferences();
   if (index === 2) renderQuestions();
 }
@@ -315,41 +315,87 @@ function addCourse(item) {
     announce("That course is already added.");
     return;
   }
-  state.courses.push({
+  const course = {
     code: item.code,
     title: item.title || null,
     credits: item.credits ?? null,
     section_count: item.section_count ?? 0,
-  });
-  renderChips();
+    instructor: null,       // selected key: professor id ("123"), "online", or null
+    professors: [],         // [{instructor_id, name}] fetched from the API
+    hasOnline: false,
+  };
+  state.courses.push(course);
+  renderCourseList();
   clearSuggestions();
   courseInput.value = "";
   courseInput.focus();
   refreshDaysOff();
+  fetchCourseInstructors(course);
 }
 
 function removeCourse(index) {
   state.courses.splice(index, 1);
-  renderChips();
+  renderCourseList();
   refreshDaysOff();
 }
 
-function renderChips() {
-  const wrap = $id("course-chips");
+async function fetchCourseInstructors(course) {
+  try {
+    const res = await fetch(`/api/v1/scheduler/courses/instructors?course=${encodeURIComponent(course.code)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    course.professors = data.professors || [];
+    course.hasOnline = !!data.has_online;
+  } catch (e) {
+    course.professors = [];
+    course.hasOnline = false;
+  }
+  renderCourseList();
+}
+
+function renderCourseList() {
+  const wrap = $id("course-list");
   wrap.innerHTML = "";
   state.courses.forEach((c, i) => {
-    const chip = el("span", "chip");
-    const main = el("span", "chip-main");
-    main.appendChild(el("span", "chip-code", c.code));
-    if (c.title) main.appendChild(el("span", "chip-title", c.title));
-    chip.appendChild(main);
-    chip.title = c.title ? `${c.code} — ${c.title}` : c.code;
-    const btn = el("button", "chip-remove", "×");
+    const row = el("li", "course-row");
+    row.style.setProperty("--course-color", PALETTE[i % PALETTE.length]);
+
+    // Left: color swatch + code + title + remove button.
+    const main = el("div", "course-row-main");
+    main.appendChild(el("span", "course-swatch"));
+    main.appendChild(el("span", "course-code", c.code));
+    if (c.title) main.appendChild(el("span", "course-title", c.title));
+    const btn = el("button", "course-remove", "×");
     btn.type = "button";
     btn.setAttribute("aria-label", `Remove ${c.code}`);
     btn.addEventListener("click", () => removeCourse(i));
-    chip.appendChild(btn);
-    wrap.appendChild(chip);
+    main.appendChild(btn);
+    row.appendChild(main);
+
+    // Right: professor dropdown (Any instructor / each professor / Online).
+    const prof = el("div", "course-prof");
+    const label = el("label", "sr-only", `Instructor for ${c.code}`);
+    label.htmlFor = `course-prof-${i}`;
+    const select = document.createElement("select");
+    select.id = `course-prof-${i}`;
+    select.className = "course-prof-select";
+    select.add(new Option("Any instructor", ""));
+    (c.professors || []).forEach((p) => {
+      select.add(new Option(titleCaseName(p.name) || "Staff", String(p.instructor_id)));
+    });
+    if (c.hasOnline) select.add(new Option("Online / no set time", "online"));
+    select.value = c.instructor || "";
+    select.addEventListener("change", () => {
+      c.instructor = select.value || null;
+      const chosen = c.instructor === "online"
+        ? "Online / no set time" : (select.selectedOptions[0] ? select.selectedOptions[0].text : "Any instructor");
+      announce(c.instructor ? `Only ${chosen} for ${c.code}.` : `Any instructor for ${c.code}.`);
+    });
+    prof.appendChild(label);
+    prof.appendChild(select);
+    row.appendChild(prof);
+
+    wrap.appendChild(row);
   });
   $id("course-count").textContent = `${state.courses.length} of ${MAX_COURSES} courses added`;
 }
@@ -743,6 +789,11 @@ function buildPayload() {
     latest_end: state.latestEnd,
     allow_online: state.allowOnline,
   };
+  const instructors = {};
+  state.courses.forEach((c) => {
+    if (c.instructor) instructors[c.code] = [c.instructor];
+  });
+  if (Object.keys(instructors).length) payload.instructors = instructors;
   if (state.envelopes.length) payload.envelopes = state.envelopes.map((e) => e.slug);
   if (state.extraText.trim()) payload.extra_constraints_text = state.extraText.trim();
   return payload;
@@ -855,13 +906,17 @@ async function swapCourse(oldCode, newCode) {
     const match = (list || []).find((x) => normCode(x.code) === normCode(newCode));
     if (match) { title = match.title; credits = match.credits ?? null; }
   } catch (e) {}
-  const replacement = { code: newCode, title, credits, section_count: 0 };
+  const replacement = {
+    code: newCode, title, credits, section_count: 0,
+    instructor: null, professors: [], hasOnline: false,
+  };
   if (idx >= 0) state.courses[idx] = replacement;
   else if (state.courses.length < MAX_COURSES) state.courses.push(replacement);
   hideFormError();
   showStep(0);
-  renderChips();
+  renderCourseList();
   refreshDaysOff();
+  fetchCourseInstructors(replacement);
   announce(`Swapped in ${newCode}. Review your courses and resubmit.`);
 }
 
@@ -1418,6 +1473,7 @@ function renderNoSchedule(data) {
       why = "it only has online sections and you said no online classes";
     } else {
       const reasons = [];
+      if (removed.instructor) reasons.push("no section has the instructor you selected");
       if (removed.online) reasons.push("online-only");
       if (removed.full) reasons.push("all full");
       if (removed.earliest_latest) reasons.push("outside your time window");
@@ -1483,7 +1539,7 @@ function restart() {
   $id("envelope-input").value = "";
   $id("extra-text").value = "";
   setEnvelopePickerOpen(false);
-  renderChips();
+  renderCourseList();
   renderEnvelopeChips();
   showView("stepper");
   showStep(0);

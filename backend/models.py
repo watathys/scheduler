@@ -38,6 +38,9 @@ class SolverRequest(BaseModel):
     blocked_times: list[BlockedTime] = Field(default_factory=list)
     skip_full_sections: bool = True
     envelopes: list[str] = Field(default_factory=list)
+    # Course -> allowed instructor keys ("<professor id>", "online", or
+    # "staff"). Absent/empty means "any instructor" for that course.
+    instructors: dict[str, list[str]] = Field(default_factory=dict)
     # Section ids of schedules already shown to the caller, so a "generate
     # more" request returns the next batch rather than repeats.
     exclude: list[list[int]] = Field(default_factory=list)
@@ -197,6 +200,9 @@ class GenerateRequest(BaseModel):
     allow_online: bool = False
     extra_constraints_text: Optional[str] = Field(default=None, max_length=500)
     envelopes: list[str] = Field(default_factory=list, max_length=8)
+    # Course -> allowed instructor keys ("<professor id>", "online", or
+    # "staff"). Absent/empty means "any instructor" for that course.
+    instructors: dict[str, list[str]] = Field(default_factory=dict)
     # Section ids of schedules already shown, so "generate more" skips them.
     exclude: list[list[int]] = Field(default_factory=list)
 
@@ -250,6 +256,19 @@ class CourseSearchResult(BaseModel):
 class DaysOffOut(BaseModel):
     """Weekdays it is actually possible to take off for a set of courses."""
     possible_days_off: list[str]
+
+
+class ProfessorOption(BaseModel):
+    """One instructor available for a course (for the per-course dropdown)."""
+    instructor_id: int
+    name: Optional[str] = None
+
+
+class CourseInstructorsOut(BaseModel):
+    """Instructors (and online availability) for a single course."""
+    course: str
+    professors: list[ProfessorOption] = Field(default_factory=list)
+    has_online: bool = False
 
 
 class GeneratedSchedule(ScheduleOut):

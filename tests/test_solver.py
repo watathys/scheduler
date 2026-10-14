@@ -254,6 +254,38 @@ def test_days_off_is_hard(db):
     assert res.bottleneck.no_sections[0].removed_by.get("days_off") == 1
 
 
+def test_instructor_filter_keeps_only_selected_professor(db):
+    pid1 = add_prof("p-1", "Alice")
+    pid2 = add_prof("p-2", "Bob")
+    add_section("MKTG 201", "001", [M("Monday", 480, 540)], instructor_id=pid1)
+    add_section("MKTG 201", "002", [M("Monday", 600, 660)], instructor_id=pid2)
+
+    res = solve(courses=["MKTG 201"], instructors={"MKTG 201": [str(pid1)]})
+    assert len(res.schedules) == 1
+    assert res.schedules[0].sections[0].instructor_name == "alice"
+
+
+def test_instructor_filter_online_keeps_async_section(db):
+    add_section("MKTG 201", "001", [M("Monday", 480, 540)])
+    add_section("MKTG 201", "900", is_online=True)
+
+    res = solve(courses=["MKTG 201"], allow_online=True, instructors={"MKTG 201": ["online"]})
+    assert len(res.schedules) == 1
+    assert res.schedules[0].sections == []
+    assert [s.course_code for s in res.schedules[0].async_online] == ["MKTG 201"]
+
+
+def test_instructor_filter_no_match_reports_bottleneck(db):
+    pid = add_prof("p-1", "Alice")
+    add_section("MKTG 201", "001", [M("Monday", 480, 540)], instructor_id=pid)
+    add_section("MKTG 201", "002", [M("Monday", 600, 660)])
+
+    res = solve(courses=["MKTG 201"], instructors={"MKTG 201": ["999999"]})
+    assert res.schedules == []
+    assert res.bottleneck is not None
+    assert res.bottleneck.no_sections[0].removed_by.get("instructor") == 2
+
+
 # ── Search cap ───────────────────────────────────────────────────────────────
 
 def test_search_caps_at_max_schedules():

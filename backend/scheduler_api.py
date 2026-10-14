@@ -19,12 +19,14 @@ from . import database, llm, solver
 from .config import settings
 from .matching import collapse, normalize_course_code
 from .models import (
+    CourseInstructorsOut,
     CourseSearchResult,
     DaysOffOut,
     EnvelopeOut,
     GenerateRequest,
     GenerateResponse,
     GeneratedSchedule,
+    ProfessorOption,
     SchedulerStatusOut,
     SolverRequest,
 )
@@ -176,6 +178,46 @@ async def courses_days_off(
     return DaysOffOut(possible_days_off=possible)
 
 
+@router.get("/courses/instructors", response_model=CourseInstructorsOut)
+async def course_instructors(
+    course: str = Query(..., description="Course code"),
+):
+    """Instructors (and online availability) for one course.
+
+    Powers the professor dropdown shown beside each added class. Returns the
+    distinct professors who teach the course, plus whether any section is
+    online so the UI can offer an "Online" option.
+    """
+    term = await get_active_term()
+    code = normalize_course_code(course)
+    async with aiosqlite.connect(database.DB) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """
+            SELECT DISTINCT s.instructor_id, s.is_online, p.byu_name
+            FROM sections s
+            LEFT JOIN professors p ON p.id = s.instructor_id
+            WHERE s.term = ? AND s.course_code = ?
+            """,
+            (term, code),
+        ) as cur:
+            rows = await cur.fetchall()
+
+    professors: list[ProfessorOption] = []
+    seen: set[int] = set()
+    has_online = False
+    for r in rows:
+        if r["is_online"]:
+            has_online = True
+        iid = r["instructor_id"]
+        if iid is not None and iid not in seen:
+            seen.add(iid)
+            professors.append(ProfessorOption(instructor_id=iid, name=r["byu_name"]))
+
+    professors.sort(key=lambda p: (p.name or "").lower())
+    return CourseInstructorsOut(course=code, professors=professors, has_online=has_online)
+
+
 # ── Schedule generation ──────────────────────────────────────────────────────
 
 def _solve_sync(req: SolverRequest):
@@ -208,6 +250,16 @@ async def generate_schedules(request: Request, body: GenerateRequest):
     if len(courses) != len(body.courses):
         warnings.append("Duplicate courses were removed.")
 
+    # Normalize the instructor-selection map so its keys match the canonical
+    # course codes above (case/spaces/hyphens-insensitive).
+    instructors: dict[str, list[str]] = {}
+    for raw, keys in (body.instructors or {}).items():
+        code = normalize_course_code(raw)
+        bucket = instructors.setdefault(code, [])
+        for k in keys:
+            if k not in bucket:
+                bucket.append(k)
+
     # Parse free-text constraints. Never raises; falls back to a warning.
     parsed = await llm.parse_constraints(body.extra_constraints_text or "")
     if parsed.warning:
@@ -223,6 +275,7 @@ async def generate_schedules(request: Request, body: GenerateRequest):
         allow_online=body.allow_online,
         blocked_times=parsed.blocked_times,
         envelopes=body.envelopes,
+        instructors=instructors,
         exclude=body.exclude,
     )
 

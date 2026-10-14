@@ -44,7 +44,7 @@ GAP_OVER_LIMIT_MIN = 180               # gaps longer than this are penalized har
 NO_GAPS_NORMALIZER_MIN = 720           # effective-gap minutes that map to a 0 score
 _NO_BOUND = 10 ** 9                    # "no earliest/latest bound" sentinel
 
-FILTER_NAMES = ("online", "days_off", "full", "earliest_latest", "blocked_times")
+FILTER_NAMES = ("instructor", "online", "days_off", "full", "earliest_latest", "blocked_times")
 RELAXATION_LABELS = [
     "earliest/latest window",
     "blocked times",
@@ -402,6 +402,20 @@ def _overlaps_blocked(m: Meeting, blocked_times: list[tuple[str, int, int]]) -> 
     return False
 
 
+def _instructor_allowed(s: Section, allowed: set[str]) -> bool:
+    """True when a section satisfies the course's instructor selection.
+
+    ``allowed`` holds the chosen keys: a professor id as a string, the literal
+    ``"online"`` (keep async/online sections), or ``"staff"`` (keep sections
+    with no assigned instructor).
+    """
+    if "online" in allowed and s.is_online:
+        return True
+    if "staff" in allowed and s.instructor_id is None:
+        return True
+    return s.instructor_id is not None and str(s.instructor_id) in allowed
+
+
 def apply_hard_filters(
     sections: list[Section],
     *,
@@ -411,17 +425,24 @@ def apply_hard_filters(
     latest_end_min: int,
     blocked_times: list[tuple[str, int, int]],
     days_off: list[str] | None = None,
+    instructors: list[str] | None = None,
 ) -> tuple[list[Section], dict[str, int]]:
     """Remove any section that violates a hard constraint.
 
     ``days_off`` is a hard constraint: any section with a meeting on a requested
-    off-day is removed. Returns (kept_sections, removed_count_by_filter). Async
-    sections (no meetings) never violate the time/blocked/days-off filters.
+    off-day is removed. ``instructors`` is a hard constraint too: when set, only
+    sections matching one of the selected instructor keys are kept. Returns
+    (kept_sections, removed_count_by_filter). Async sections (no meetings) never
+    violate the time/blocked/days-off filters.
     """
     off_days = {_norm_day(d) for d in (days_off or [])}
+    allowed = set(instructors or [])
     kept: list[Section] = []
     removed = {name: 0 for name in FILTER_NAMES}
     for s in sections:
+        if allowed and not _instructor_allowed(s, allowed):
+            removed["instructor"] += 1
+            continue
         if s.is_online and not allow_online:
             removed["online"] += 1
             continue
@@ -716,8 +737,27 @@ def _blocked_tuples(req: SolverRequest) -> list[tuple[str, int, int]]:
     return [(_norm_day(b.day), b.start_min, b.end_min) for b in req.blocked_times]
 
 
+def _normalize_instructors(instructors: dict[str, list[str]] | None) -> dict[str, list[str]]:
+    """Normalize course-code keys in an instructor selection map.
+
+    Frontend keys arrive as canonical codes already, but normalize anyway so a
+    hand-written client can pass "mktg201" and still match. Values are de-duped.
+    """
+    if not instructors:
+        return {}
+    out: dict[str, list[str]] = {}
+    for raw, keys in instructors.items():
+        code = normalize_course_code(raw)
+        bucket = out.setdefault(code, [])
+        for k in keys:
+            if k not in bucket:
+                bucket.append(k)
+    return out
+
+
 def _apply(req: SolverRequest, sections: list[Section],
-           blocked: list[tuple[str, int, int]]) -> tuple[list[Section], dict[str, int]]:
+           blocked: list[tuple[str, int, int]],
+           instructors: list[str] | None = None) -> tuple[list[Section], dict[str, int]]:
     return apply_hard_filters(
         sections,
         allow_online=req.allow_online,
@@ -726,6 +766,7 @@ def _apply(req: SolverRequest, sections: list[Section],
         latest_end_min=req.latest_end_min,
         blocked_times=blocked,
         days_off=req.days_off,
+        instructors=instructors,
     )
 
 
@@ -765,10 +806,11 @@ def diagnose_bottleneck(
 ) -> BottleneckDiagnosis:
     """Explain why no schedule exists and what single relaxation would fix it."""
     blocked = _blocked_tuples(req)
+    instructors = _normalize_instructors(req.instructors)
     filtered: dict[str, list[Section]] = {}
     no_sections: list[CourseFilterReport] = []
     for code in codes:
-        kept, removed = _apply(req, loaded[code], blocked)
+        kept, removed = _apply(req, loaded[code], blocked, instructors.get(code))
         filtered[code] = kept
         if not kept:
             no_sections.append(CourseFilterReport(
@@ -793,7 +835,7 @@ def diagnose_bottleneck(
         courses_sections: list[tuple[str, list[Section]]] = []
         ok = True
         for code in codes:
-            kept, _ = _apply(rreq, loaded[code], rblocked)
+            kept, _ = _apply(rreq, loaded[code], rblocked, instructors.get(code))
             if not kept:
                 ok = False
                 break
@@ -810,6 +852,8 @@ def diagnose_bottleneck(
         elif "days_off" in r.removed_by and req.days_off:
             days = ", ".join(req.days_off)
             msgs.append(f"{r.course} has no sections that avoid {days} (a day you want off)")
+        elif "instructor" in r.removed_by:
+            msgs.append(f"{r.course} has no sections taught by the instructor(s) you selected")
         elif r.removed_by:
             msgs.append(f"{r.course} has no sections left after filtering ({_fmt_filters(r.removed_by)})")
     if pairs:
@@ -945,6 +989,7 @@ async def solve_schedule(req: SolverRequest) -> SolverResponse:
             )
 
     blocked = _blocked_tuples(req)
+    instructors = _normalize_instructors(req.instructors)
 
     env_slugs = list(dict.fromkeys(req.envelopes or []))  # dedupe, keep order
     env_bundles: dict[str, list[Bundle]] = {}
@@ -983,7 +1028,7 @@ async def solve_schedule(req: SolverRequest) -> SolverResponse:
     # Filter plain courses.
     filtered: dict[str, list[Section]] = {}
     for code in plain_codes:
-        filtered[code], _ = _apply(req, loaded[code], blocked)
+        filtered[code], _ = _apply(req, loaded[code], blocked, instructors.get(code))
 
     # Filter envelope bundles (whole-bundle hard filters).
     env_kept: dict[str, list[Bundle]] = {}

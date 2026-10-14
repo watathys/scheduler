@@ -138,6 +138,32 @@ def test_autocomplete_short_query_empty(client):
     assert r.json() == []
 
 
+def test_instructors_endpoint_lists_professors_and_online(client):
+    pid1 = _seed_prof("Melissa Larson")
+    pid2 = _seed_prof("John Doe")
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)], instructor_id=pid1)
+    _seed_section("MKTG 201", "002", [M("Monday", 600, 660)], instructor_id=pid1)
+    _seed_section("MKTG 201", "003", [M("Monday", 720, 780)], instructor_id=pid2)
+    _seed_section("MKTG 201", "900", [], is_online=True)
+
+    r = client.get("/api/v1/scheduler/courses/instructors", params={"course": "MKTG 201"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["course"] == "MKTG 201"
+    names = {p["name"] for p in body["professors"]}
+    assert names == {"melissa larson", "john doe"}
+    assert body["has_online"] is True
+
+
+def test_instructors_endpoint_no_professors_still_reports_online(client):
+    _seed_section("MKTG 201", "900", [], is_online=True)
+    r = client.get("/api/v1/scheduler/courses/instructors", params={"course": "MKTG 201"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["professors"] == []
+    assert body["has_online"] is True
+
+
 # ── Days-off feasibility ─────────────────────────────────────────────────────
 
 def test_days_off_single_day_course(client):
@@ -212,6 +238,47 @@ def test_generate_happy_path(client):
     assert "days_on_campus" in sched["metrics"]
     assert sched["total_score"] > 0
     assert sched["explanation"]  # fallback template (no LLM key)
+
+
+# ── Professor filtering ─────────────────────────────────────────────────────
+
+def test_generate_filters_by_professor(client):
+    pid_larson = _seed_prof("Melissa Larson")
+    pid_doe = _seed_prof("John Doe")
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)], instructor_id=pid_larson)
+    _seed_section("MKTG 201", "002", [M("Monday", 600, 660)], instructor_id=pid_doe)
+    _seed_section("STRAT 305", "001", [M("Monday", 660, 720)])
+
+    r = _generate(client, instructors={"MKTG 201": [str(pid_larson)]})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok"
+    mktg = next(s for s in body["schedules"][0]["sections"] if s["course_code"] == "MKTG 201")
+    assert mktg["instructor_name"] == "melissa larson"
+
+
+def test_generate_online_filter(client):
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)])
+    _seed_section("MKTG 201", "900", [], is_online=True)
+
+    r = _generate(client, courses=["MKTG 201"], allow_online=True,
+                  instructors={"MKTG 201": ["online"]})
+    assert r.status_code == 200
+    sched = r.json()["schedules"][0]
+    assert sched["sections"] == []
+    assert [s["course_code"] for s in sched["async_online"]] == ["MKTG 201"]
+
+
+def test_generate_professor_filter_no_match_returns_no_schedule(client):
+    pid = _seed_prof("Melissa Larson")
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)], instructor_id=pid)
+    _seed_section("MKTG 201", "002", [M("Monday", 600, 660)])
+
+    r = _generate(client, courses=["MKTG 201"], instructors={"MKTG 201": ["999999"]})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "no_schedule"
+    assert body["bottleneck"]["no_sections"][0]["removed_by"]["instructor"] == 2
 
 
 # ── Per-professor breakdown ──────────────────────────────────────────────────
