@@ -1,0 +1,289 @@
+{
+  "title": "Strat jr core",
+  "display_title": "STRAT Junior Core",
+  "slug": "strat-jr-core",
+  "term": "20271",
+  "captured_at": "2026-10-13",
+  "bundles": [
+    {
+      "env_id": "28512",
+      "capacity_snapshot": 35,
+      "seats_snapshot": 35,
+      "sections": [
+        {
+          "course_code": "STRAT 411",
+          "section_number": "001",
+          "instructor_snapshot": "David Bryce",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1258"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1258"
+            }
+          ]
+        },
+        {
+          "course_code": "STRAT 412",
+          "section_number": "001",
+          "instructor_snapshot": "Ben Lewis",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 2124"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 2124"
+            }
+          ]
+        },
+        {
+          "course_code": "STRAT 432",
+          "section_number": "001",
+          "instructor_snapshot": "Mark Hansen",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 660,
+              "end_min": 735,
+              "room": "TNRB 3325"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28513",
+      "capacity_snapshot": 38,
+      "seats_snapshot": 38,
+      "sections": [
+        {
+          "course_code": "STRAT 411",
+          "section_number": "003",
+          "instructor_snapshot": "David Bryce",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1230"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1230"
+            }
+          ]
+        },
+        {
+          "course_code": "STRAT 412",
+          "section_number": "002",
+          "instructor_snapshot": "Ben Lewis",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2325"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2325"
+            }
+          ]
+        },
+        {
+          "course_code": "STRAT 432",
+          "section_number": "002",
+          "instructor_snapshot": "Mark Hansen",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Wednesday",
+              "start_min": 660,
+              "end_min": 735,
+              "room": "TNRB 3325"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28514",
+      "capacity_snapshot": 19,
+      "seats_snapshot": 19,
+      "sections": [
+        {
+          "course_code": "STRAT 411",
+          "section_number": "002",
+          "instructor_snapshot": "David Bryce",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1230"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1230"
+            }
+          ]
+        },
+        {
+          "course_code": "STRAT 412",
+          "section_number": "001",
+          "instructor_snapshot": "Ben Lewis",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 2124"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 2124"
+            }
+          ]
+        },
+        {
+          "course_code": "STRAT 432",
+          "section_number": "001",
+          "instructor_snapshot": "Mark Hansen",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 660,
+              "end_min": 735,
+              "room": "TNRB 3325"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28515",
+      "capacity_snapshot": 17,
+      "seats_snapshot": 17,
+      "sections": [
+        {
+          "course_code": "STRAT 411",
+          "section_number": "002",
+          "instructor_snapshot": "David Bryce",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1230"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1230"
+            }
+          ]
+        },
+        {
+          "course_code": "STRAT 412",
+          "section_number": "002",
+          "instructor_snapshot": "Ben Lewis",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2325"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2325"
+            }
+          ]
+        },
+        {
+          "course_code": "STRAT 432",
+          "section_number": "002",
+          "instructor_snapshot": "Mark Hansen",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Wednesday",
+              "start_min": 660,
+              "end_min": 735,
+              "room": "TNRB 3325"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,197 @@
+{
+  "title": "sfl 221 and 222 envelope",
+  "display_title": "SFL 221 And 222 Envelope",
+  "slug": "sfl-221-and-222-envelope",
+  "term": "20271",
+  "captured_at": "2026-10-13",
+  "bundles": [
+    {
+      "env_id": "28500",
+      "capacity_snapshot": 3,
+      "seats_snapshot": 3,
+      "sections": [
+        {
+          "course_code": "SFL 222",
+          "section_number": "001",
+          "instructor_snapshot": "Anne Ure",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 465,
+              "end_min": 690,
+              "room": "JFSB 1100"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 465,
+              "end_min": 690,
+              "room": "JFSB 1100"
+            }
+          ]
+        },
+        {
+          "course_code": "SFL 221",
+          "section_number": "001",
+          "instructor_snapshot": "Anne Ure",
+          "mode": null,
+          "credits": 1.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Friday",
+              "start_min": 540,
+              "end_min": 590,
+              "room": "JFSB 1081"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28501",
+      "capacity_snapshot": 3,
+      "seats_snapshot": 3,
+      "sections": [
+        {
+          "course_code": "SFL 222",
+          "section_number": "002",
+          "instructor_snapshot": "Anne Ure",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 735,
+              "end_min": 960,
+              "room": "JFSB 1100"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 735,
+              "end_min": 960,
+              "room": "JFSB 1100"
+            }
+          ]
+        },
+        {
+          "course_code": "SFL 221",
+          "section_number": "001",
+          "instructor_snapshot": "Anne Ure",
+          "mode": null,
+          "credits": 1.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Friday",
+              "start_min": 540,
+              "end_min": 590,
+              "room": "JFSB 1081"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28502",
+      "capacity_snapshot": 3,
+      "seats_snapshot": 3,
+      "sections": [
+        {
+          "course_code": "SFL 222",
+          "section_number": "003",
+          "instructor_snapshot": "Anne Ure",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 465,
+              "end_min": 650,
+              "room": "JFSB 1100"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 465,
+              "end_min": 690,
+              "room": "JFSB 1100"
+            }
+          ]
+        },
+        {
+          "course_code": "SFL 221",
+          "section_number": "001",
+          "instructor_snapshot": "Anne Ure",
+          "mode": null,
+          "credits": 1.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Friday",
+              "start_min": 540,
+              "end_min": 590,
+              "room": "JFSB 1081"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28503",
+      "capacity_snapshot": 3,
+      "seats_snapshot": 3,
+      "sections": [
+        {
+          "course_code": "SFL 222",
+          "section_number": "004",
+          "instructor_snapshot": "Anne Ure",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 735,
+              "end_min": 960,
+              "room": "JFSB 1100"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 735,
+              "end_min": 960,
+              "room": "JFSB 1100"
+            }
+          ]
+        },
+        {
+          "course_code": "SFL 221",
+          "section_number": "001",
+          "instructor_snapshot": "Anne Ure",
+          "mode": null,
+          "credits": 1.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Friday",
+              "start_min": 540,
+              "end_min": 590,
+              "room": "JFSB 1081"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

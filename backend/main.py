@@ -12,8 +12,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from . import jobs, scheduler_api
+from . import admin, envelopes, jobs, scheduler_api
 from .database import init_schedule_db
+from .logging_filter import install_secret_filter
+
+# Redact ADMIN_PATH_SECRET from every log record (including uvicorn's access
+# log) as soon as possible. Requires the env var loaded by load_dotenv above.
+install_secret_filter()
 
 logger = logging.getLogger("freeroomfinder")
 
@@ -21,6 +26,13 @@ logger = logging.getLogger("freeroomfinder")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_schedule_db()
+
+    # Seed committed envelope JSON into the DB — but ONLY for terms with no
+    # envelopes yet, so admin-saved data is never overwritten on startup.
+    try:
+        await envelopes.seed_envelopes_from_json()
+    except Exception:  # noqa: BLE001 — envelopes must never block startup
+        logger.exception("envelope seeding failed at startup")
 
     # Schedule-builder background jobs. Each is safe to skip/fail and guarded
     # against double execution by a per-job lock inside jobs.py.
@@ -50,7 +62,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(scheduler_api.router)
+app.include_router(admin.router)
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+# Outermost: enforce admin security headers + no-CORS on /next-term/* routes.
+app.add_middleware(admin.AdminSecurityMiddleware)
 
 
 @app.get("/", response_class=FileResponse)

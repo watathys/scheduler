@@ -410,6 +410,49 @@ textarea { resize: vertical; }
   margin-top: 40px; text-align: center; font-size: var(--fs-xs); color: var(--muted);
 }
 
+/* ── Envelopes ─────────────────────────────────── */
+.envelope-picker {
+  margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);
+}
+.envelope-picker-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
+.envelope-hint { margin: 0; }
+
+.envelope-chip {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 6px 6px 6px 12px; background: var(--accent-soft);
+  border: 1px solid var(--accent); border-radius: 8px; font-size: var(--fs-s);
+}
+.envelope-chip-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: 0; padding: 0; color: var(--text); font-size: var(--fs-s);
+}
+.envelope-chip-caret { color: var(--accent); font-size: var(--fs-xs); transition: transform .15s ease; }
+.envelope-chip.is-open .envelope-chip-caret { transform: rotate(180deg); }
+.envelope-chip-body {
+  flex-basis: 100%; padding: 6px 4px 2px 0; color: var(--text-2); font-size: var(--fs-xs);
+}
+.envelope-chip-body[hidden] { display: none; }
+.envelope-chip-courses { line-height: 1.5; }
+
+.cal-block-badge {
+  display: inline-block; margin-top: 2px;
+  font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
+  color: #1748a6;
+}
+
+.envelope-notice { margin-bottom: 0; }
+.envelope-notice .card-title { margin-bottom: 12px; }
+.envelope-notice-block { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
+.envelope-notice-block:last-of-type { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; }
+.envelope-notice-title { font-weight: 700; font-size: var(--fs-m); }
+.envelope-notice-rule { color: var(--text-2); font-size: var(--fs-s); margin: 4px 0 8px; }
+.envelope-notice-list { margin: 0 0 8px 20px; font-size: var(--fs-s); }
+.envelope-notice-meta { font-size: var(--fs-xs); color: var(--muted); }
+.envelope-notice-disclaimer {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+  font-size: var(--fs-xs); color: var(--muted);
+}
+
 /* ── Responsive ────────────────────────────────── */
 @media (max-width: 960px) {
   .option-layout { grid-template-columns: 1fr; }

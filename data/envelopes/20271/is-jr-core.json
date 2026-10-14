@@ -1,0 +1,313 @@
+{
+  "title": "IS jr core",
+  "display_title": "IS Junior Core",
+  "slug": "is-jr-core",
+  "term": "20271",
+  "captured_at": "2026-10-13",
+  "bundles": [
+    {
+      "env_id": "28516",
+      "capacity_snapshot": 44,
+      "seats_snapshot": 44,
+      "sections": [
+        {
+          "course_code": "IS 414",
+          "section_number": "001",
+          "instructor_snapshot": "Taylor Wells",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 3319"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 3319"
+            }
+          ]
+        },
+        {
+          "course_code": "IS 455",
+          "section_number": "001",
+          "instructor_snapshot": "Tanner Skousen",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 3319"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 3319"
+            }
+          ]
+        },
+        {
+          "course_code": "IS 456",
+          "section_number": "001",
+          "instructor_snapshot": "Ryan Schuetzler",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 3319"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 3319"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28517",
+      "capacity_snapshot": 44,
+      "seats_snapshot": 44,
+      "sections": [
+        {
+          "course_code": "IS 414",
+          "section_number": "002",
+          "instructor_snapshot": "Taylor Wells",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 3325"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 3325"
+            }
+          ]
+        },
+        {
+          "course_code": "IS 455",
+          "section_number": "002",
+          "instructor_snapshot": "Tanner Skousen",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 3325"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 3325"
+            }
+          ]
+        },
+        {
+          "course_code": "IS 456",
+          "section_number": "002",
+          "instructor_snapshot": "Ryan Schuetzler",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 3325"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 3325"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28518",
+      "capacity_snapshot": 44,
+      "seats_snapshot": 44,
+      "sections": [
+        {
+          "course_code": "IS 414",
+          "section_number": "003",
+          "instructor_snapshot": "Taylor Wells",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 3319"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 3319"
+            }
+          ]
+        },
+        {
+          "course_code": "IS 455",
+          "section_number": "003",
+          "instructor_snapshot": "Tanner Skousen",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 3319"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 3319"
+            }
+          ]
+        },
+        {
+          "course_code": "IS 456",
+          "section_number": "003",
+          "instructor_snapshot": "Ryan Schuetzler",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 3319"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 3319"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28519",
+      "capacity_snapshot": 44,
+      "seats_snapshot": 44,
+      "sections": [
+        {
+          "course_code": "IS 414",
+          "section_number": "004",
+          "instructor_snapshot": "Taylor Wells",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 3325"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 3325"
+            }
+          ]
+        },
+        {
+          "course_code": "IS 455",
+          "section_number": "004",
+          "instructor_snapshot": "Tanner Skousen",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 3325"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 3325"
+            }
+          ]
+        },
+        {
+          "course_code": "IS 456",
+          "section_number": "004",
+          "instructor_snapshot": "Ryan Schuetzler",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 3325"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 3325"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

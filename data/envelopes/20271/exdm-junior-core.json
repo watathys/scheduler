@@ -1,0 +1,221 @@
+{
+  "title": "EXDM junior core",
+  "display_title": "EXDM Junior Core",
+  "slug": "exdm-junior-core",
+  "term": "20271",
+  "captured_at": "2026-10-13",
+  "bundles": [
+    {
+      "env_id": "28504",
+      "capacity_snapshot": 44,
+      "seats_snapshot": 44,
+      "sections": [
+        {
+          "course_code": "EXDM 415",
+          "section_number": "001",
+          "instructor_snapshot": "Ross Storey",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1258"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1258"
+            }
+          ]
+        },
+        {
+          "course_code": "EXDM 416",
+          "section_number": "001",
+          "instructor_snapshot": "Peter Ward",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1258"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1258"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28508",
+      "capacity_snapshot": 44,
+      "seats_snapshot": 44,
+      "sections": [
+        {
+          "course_code": "EXDM 415",
+          "section_number": "002",
+          "instructor_snapshot": "Ross Storey",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 930,
+              "end_min": 1005,
+              "room": "TNRB 2124"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 930,
+              "end_min": 1005,
+              "room": "TNRB 2124"
+            }
+          ]
+        },
+        {
+          "course_code": "EXDM 416",
+          "section_number": "002",
+          "instructor_snapshot": "Peter Ward",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1258"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1258"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28509",
+      "capacity_snapshot": 44,
+      "seats_snapshot": 44,
+      "sections": [
+        {
+          "course_code": "EXDM 415",
+          "section_number": "003",
+          "instructor_snapshot": "Camilla Hodge",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1244"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1244"
+            }
+          ]
+        },
+        {
+          "course_code": "EXDM 416",
+          "section_number": "003",
+          "instructor_snapshot": "Peter Ward",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1439"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1439"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28510",
+      "capacity_snapshot": 44,
+      "seats_snapshot": 44,
+      "sections": [
+        {
+          "course_code": "EXDM 415",
+          "section_number": "004",
+          "instructor_snapshot": "Jim Anderson",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1258"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1258"
+            }
+          ]
+        },
+        {
+          "course_code": "EXDM 416",
+          "section_number": "004",
+          "instructor_snapshot": "Jim Anderson",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1321"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1321"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -20,6 +20,7 @@ from .config import settings
 from .matching import collapse, normalize_course_code
 from .models import (
     CourseSearchResult,
+    EnvelopeOut,
     GenerateRequest,
     GenerateResponse,
     GeneratedSchedule,
@@ -61,11 +62,15 @@ def _check_generate_rate(request: Request) -> None:
 # ── Term selection ───────────────────────────────────────────────────────────
 
 async def get_active_term() -> str:
-    """The term students register for: the newest term in the sections table.
+    """The term students register for.
 
-    Falls back to the config's current term only when the table is empty, so
-    we never serve a stale date-derived term once real section data exists.
+    Priority: the admin-published ``settings.active_term`` (if set), then the
+    newest term present in the sections table (the historical behavior), then
+    the config's current term only when the table is empty.
     """
+    term = await database.get_setting("active_term")
+    if term:
+        return term
     term = await database.get_latest_sections_term()
     return term or settings.current_term
 
@@ -193,6 +198,7 @@ async def generate_schedules(request: Request, body: GenerateRequest):
         latest_end_min=body.latest_end_min,
         allow_online=body.allow_online,
         blocked_times=parsed.blocked_times,
+        envelopes=body.envelopes,
     )
 
     try:
@@ -253,14 +259,42 @@ async def generate_schedules(request: Request, body: GenerateRequest):
     )
 
 
+# ── Envelopes ────────────────────────────────────────────────────────────────
+
+@router.get("/envelopes", response_model=list[EnvelopeOut])
+async def list_envelopes():
+    """Enrollment envelopes available for the active term.
+
+    Only verified-ok bundles are offered to students; the ``ok_bundles`` count
+    here reflects that (a program with zero ok bundles lists zero and is
+    effectively unavailable).
+    """
+    term = await get_active_term()
+    envelopes = await database.get_envelopes(term)
+    out: list[EnvelopeOut] = []
+    for env in envelopes:
+        ok_bundles = sum(1 for b in env["bundles"] if b["ok"] == 1)
+        courses = sorted({s["course_code"] for b in env["bundles"] for s in b["sections"]})
+        out.append(EnvelopeOut(
+            slug=env["slug"],
+            title=env["display_title"],
+            ok_bundles=ok_bundles,
+            total_bundles=len(env["bundles"]),
+            courses=courses,
+            captured_at=env["captured_at"],
+        ))
+    return out
+
+
 # ── Status ───────────────────────────────────────────────────────────────────
 
 @router.get("/status", response_model=SchedulerStatusOut)
 async def scheduler_status():
-    stats = await database.get_scheduler_stats()
+    term = await get_active_term()
+    stats = await database.get_scheduler_stats(term)
     return SchedulerStatusOut(
         status="ready" if stats["section_count"] > 0 else "loading",
-        term=await get_active_term(),
+        term=term,
         section_count=stats["section_count"],
         meeting_count=stats["meeting_count"],
         professor_count=stats["professor_count"],

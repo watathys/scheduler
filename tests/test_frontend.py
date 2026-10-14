@@ -105,3 +105,23 @@ def test_frontend_professor_row_builds_with_create_element():
     assert "el(\"span\", \"prof-name\"" in js
     # The RMP link is an <a> built with createElement, not string HTML.
     assert "a.rel = \"noopener noreferrer\"" in js
+
+
+# ── Envelopes ────────────────────────────────────────────────────────────────
+
+def test_html_references_envelope_picker():
+    html = (FRONTEND_DIR / "scheduler.html").read_text(encoding="utf-8")
+    assert 'id="envelope-input"' in html
+    assert 'id="envelope-suggestions"' in html
+    assert 'id="envelope-chips"' in html
+
+
+def test_frontend_envelope_notice_copy_present():
+    """The results view must carry the required envelope registration copy."""
+    js = (FRONTEND_DIR / "scheduler.js").read_text(encoding="utf-8")
+    assert "Register in the Registration Cart by choosing the envelope that lists exactly these sections" in js
+    assert "Env numbers are specific to" in js
+    assert "Some envelopes are restricted to certain programs or students. Confirm eligibility in myBYU." in js
+    # The envelope sections are built with DOM APIs (via the `el` helper), not
+    # string-concatenated into innerHTML.
+    assert "function buildEnvelopeNotice" in js

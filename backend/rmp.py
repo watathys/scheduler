@@ -596,11 +596,16 @@ async def refresh_professors(
     limit: int | None = None,
     force: bool = False,
     fetcher: Callable[[httpx.AsyncClient, str], Awaitable[list[dict]]] | None = None,
+    progress: dict | None = None,
 ) -> dict:
     """Look up stale professors on RMP and store ratings. Returns a summary.
 
     `fetcher` is injectable for tests: an async callable (client, name) ->
     list[candidate dicts]. Defaults to the real RMP search.
+
+    `progress` (optional) is a mutable dict updated in place for the admin
+    live-progress polling: keys ``phase``, ``total``, ``fetched``, ``matched``,
+    ``unmatched``.
     """
     await database.init_schedule_db()
     cutoff = (datetime.now(timezone.utc) - timedelta(days=REFRESH_AGE_DAYS)).isoformat()
@@ -613,6 +618,11 @@ async def refresh_professors(
         "not_found": 0,
         "errors": 0,
     }
+    if progress is not None:
+        progress.update({
+            "phase": "refreshing", "total": len(professors), "fetched": 0,
+            "matched": 0, "unmatched": 0,
+        })
 
     search = fetcher or search_teachers
 
@@ -672,6 +682,10 @@ async def refresh_professors(
                 # Log clearly and skip; never crash or wipe existing ratings.
                 logger.warning("RMP error for %r: %s", name, e)
                 summary["errors"] += 1
+            if progress is not None:
+                progress["fetched"] += 1
+                progress["matched"] = summary["matched"]
+                progress["unmatched"] = summary["attempted"] - summary["matched"]
             await asyncio.sleep(RATE_LIMIT_SECONDS)
 
     logger.info("RMP refresh summary: %s", summary)

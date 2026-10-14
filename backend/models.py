@@ -37,6 +37,7 @@ class SolverRequest(BaseModel):
     allow_online: bool = False
     blocked_times: list[BlockedTime] = Field(default_factory=list)
     skip_full_sections: bool = True
+    envelopes: list[str] = Field(default_factory=list)
 
     @field_validator("preferences")
     @classmethod
@@ -69,6 +70,20 @@ class SectionOut(BaseModel):
     ease_score: float
     ease_confidence: float
     meetings: list[MeetingOut] = Field(default_factory=list)
+    # Envelope provenance (present only when a section came from an envelope).
+    via_envelope: Optional[str] = None
+    env_id: Optional[str] = None
+    captured_at: Optional[str] = None
+
+
+class EnvelopeOut(BaseModel):
+    """One enrollment envelope for the active term (Step 1 picker + API)."""
+    slug: str
+    title: str              # cleaned display title
+    ok_bundles: int         # number of verified-ok bundles offered
+    total_bundles: int
+    courses: list[str] = Field(default_factory=list)
+    captured_at: str
 
 
 class ProfessorBreakdown(BaseModel):
@@ -117,10 +132,17 @@ class CourseFilterReport(BaseModel):
     removed_by: dict[str, int]
 
 
+class EnvelopeFilterReport(BaseModel):
+    slug: str
+    title: str
+    removed_by: dict[str, int]
+
+
 class BottleneckDiagnosis(BaseModel):
     no_sections: list[CourseFilterReport] = Field(default_factory=list)
     feasible_relaxations: list[str] = Field(default_factory=list)
     always_conflicting_pairs: list[tuple[str, str]] = Field(default_factory=list)
+    envelope_problems: list[EnvelopeFilterReport] = Field(default_factory=list)
     message: Optional[str] = None
 
 
@@ -167,6 +189,7 @@ class GenerateRequest(BaseModel):
     latest_end: str = "22:00"
     allow_online: bool = False
     extra_constraints_text: Optional[str] = Field(default=None, max_length=500)
+    envelopes: list[str] = Field(default_factory=list, max_length=8)
 
     @field_validator("preferences")
     @classmethod

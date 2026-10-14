@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import re
 from typing import Optional
 
 import httpx
@@ -85,6 +86,37 @@ def is_online_section(section: dict) -> bool:
     """True when a section is a remote/online offering (not classroom)."""
     mode = (section.get("mode") or "").strip()
     return mode in ONLINE_MODES
+
+
+_MONTHS = {
+    "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+    "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
+}
+_BYU_DATE_RE = re.compile(r"^\s*(\d{1,2})-([A-Za-z]{3})-(\d{2,4})\s*$")
+
+
+def parse_byu_date(raw: Optional[str]) -> Optional[str]:
+    """``"06-JAN-27"`` -> ``"2027-01-06"`` (ISO). None for missing/malformed.
+
+    getSections.php returns ``start_date`` / ``end_date`` in ``DD-MON-YY``
+    form; half-semester sections carry a narrower range (TERM 1 vs TERM 2).
+    """
+    if not raw:
+        return None
+    m = _BYU_DATE_RE.match(str(raw))
+    if not m:
+        return None
+    day = int(m.group(1))
+    mon = m.group(2).upper()
+    year = int(m.group(3))
+    if mon not in _MONTHS:
+        return None
+    if year < 100:
+        year += 2000
+    try:
+        return f"{year:04d}-{_MONTHS[mon]:02d}-{day:02d}"
+    except ValueError:
+        return None
 
 
 def meetings_from_times(
@@ -195,6 +227,55 @@ async def fetch_departments(
     return {str(k): str(v) for k, v in dl.items()}
 
 
+async def fetch_yearterm_options(
+    client: httpx.AsyncClient, session_id: str
+) -> list[dict]:
+    """Return BYU's available yearterms as ``[{term, label}]`` (empty on failure).
+
+    ``getYeartermData.php`` exposes the term list under a few possible keys; we
+    accept the common shapes and normalize each entry to ``{term, label}``.
+    """
+    try:
+        resp = await client.post(
+            _api_url("ajax/getYeartermData.php"),
+            data={},
+            timeout=settings.request_timeout,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as e:
+        logger.warning("fetch_yearterm_options: %s", e)
+        return []
+    if not isinstance(data, dict):
+        return []
+    raw = None
+    for key in ("yearterm_list", "yearterms", "yearterm_options", "terms"):
+        v = data.get(key)
+        if isinstance(v, list) and v:
+            raw = v
+            break
+    if raw is None:
+        return []
+    out: list[dict] = []
+    for item in raw:
+        if isinstance(item, dict):
+            term = (
+                item.get("yearterm") or item.get("term")
+                or item.get("code") or item.get("id")
+            )
+            label = (
+                item.get("year_term_desc") or item.get("label")
+                or item.get("description") or item.get("name") or term
+            )
+        elif isinstance(item, str):
+            term = label = item
+        else:
+            continue
+        if term:
+            out.append({"term": str(term), "label": str(label or term)})
+    return out
+
+
 async def fetch_courses_for_department(
     client: httpx.AsyncClient, session_id: str, year_term: str, dept: str
 ) -> dict[str, dict]:
@@ -247,6 +328,8 @@ async def _persist_course(
             instructor_id=instructor_id,
             is_online=is_online_section(section),
             seats_open=section_seats_open(section),
+            start_date=parse_byu_date(section.get("start_date")),
+            end_date=parse_byu_date(section.get("end_date")),
         )
         await replace_section_meetings(
             section_id, meetings_from_times(section.get("times"))
@@ -259,10 +342,21 @@ async def scrape_term(
     year_term: str,
     departments: Optional[dict[str, str]] = None,
     only_departments: Optional[list[str]] = None,
+    progress: Optional[dict] = None,
 ) -> dict:
-    """Scrape every section for a term. Returns summary stats."""
+    """Scrape every section for a term. Returns summary stats.
+
+    ``progress`` (optional) is a mutable dict updated in place for the admin
+    live-progress polling: keys ``phase``, ``departments_total``,
+    ``departments_done``, ``courses``, ``sections``.
+    """
     await init_schedule_db()
     stats = {"departments": 0, "courses": 0, "sections": 0}
+    if progress is not None:
+        progress.update({
+            "phase": "starting", "departments_total": 0, "departments_done": 0,
+            "courses": 0, "sections": 0,
+        })
     sem = asyncio.Semaphore(MAX_CONCURRENCY)
 
     async with create_client() as client:
@@ -273,6 +367,9 @@ async def scrape_term(
         if only_departments:
             dept_codes = [d for d in dept_codes if d in set(only_departments)]
         stats["departments"] = len(dept_codes)
+        if progress is not None:
+            progress["departments_total"] = len(dept_codes)
+            progress["phase"] = "courses"
 
         # Phase 1: enumerate courses per department.
         courses_by_id: dict[str, dict] = {}
@@ -285,9 +382,15 @@ async def scrape_term(
                 )
             for cid, course in found.items():
                 courses_by_id[cid] = course
+            if progress is not None:
+                progress["departments_done"] += 1
+                progress["courses"] = len(courses_by_id)
 
         await asyncio.gather(*(collect_courses(d) for d in dept_codes))
         stats["courses"] = len(courses_by_id)
+        if progress is not None:
+            progress["phase"] = "sections"
+            progress["departments_done"] = len(dept_codes)
 
         # Phase 2: fetch + persist sections per course.
         async def persist_one(cid: str) -> int:
@@ -295,7 +398,10 @@ async def scrape_term(
             async with sem:
                 await asyncio.sleep(DELAY_SECONDS)
                 sections = await fetch_sections(client, session_id, cid, year_term)
-            return await _persist_course(year_term, course, sections)
+            written = await _persist_course(year_term, course, sections)
+            if progress is not None:
+                progress["sections"] += written
+            return written
 
         written = await asyncio.gather(*(persist_one(cid) for cid in courses_by_id))
         stats["sections"] = sum(written)

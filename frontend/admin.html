@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Next-term refresh</title>
+<style>
+  :root {
+    --bg: #0f172a; --panel: #1e293b; --panel2: #273549;
+    --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8;
+    --ok: #4ade80; --warn: #fbbf24; --bad: #f87171; --border: #334155;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    padding: 18px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  header h1 { font-size: 20px; margin: 0; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  main { padding: 24px; max-width: 1080px; margin: 0 auto; }
+  section.card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 22px;
+  }
+  section.card > h2 { margin: 0 0 14px; font-size: 17px; color: var(--accent); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  button, input, textarea, select {
+    font: inherit; color: var(--text); background: var(--panel2);
+    border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px;
+  }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: #0ea5e9; color: #082f49; font-weight: 600; border-color: #0ea5e9; }
+  button.danger { background: #b91c1c; color: #fff; border-color: #b91c1c; }
+  label { color: var(--muted); font-size: 13px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+  .stat { background: var(--panel2); border-radius: 8px; padding: 12px 14px; }
+  .stat .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .stat .v { font-size: 20px; margin-top: 4px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; }
+  .pill.ok { background: #14532d; color: var(--ok); }
+  .pill.bad { background: #450a0a; color: var(--bad); }
+  .pill.warn { background: #422006; color: var(--warn); }
+  .pill.mut { background: #1e293b; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .msg { padding: 10px 12px; border-radius: 8px; margin-top: 12px; white-space: pre-wrap; }
+  .msg.ok { background: #052e16; color: var(--ok); }
+  .msg.bad { background: #450a0a; color: var(--bad); }
+  .msg.warn { background: #422006; color: var(--warn); }
+  textarea { width: 100%; min-height: 180px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  .title-input { width: 100%; }
+  .check { display: flex; gap: 8px; align-items: flex-start; margin: 4px 0; }
+  a { color: var(--accent); }
+  .progress-bar { background: var(--panel2); height: 8px; border-radius: 999px; overflow: hidden; margin-top: 6px; }
+  .progress-bar > div { background: var(--accent); height: 100%; width: 0%; }
+  .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Next-term refresh</h1>
+  <span class="sub">scrape &middot; ratings &middot; envelopes &middot; publish</span>
+</header>
+<main>
+
+  <!-- 1. Dashboard -->
+  <section class="card">
+    <h2>Dashboard</h2>
+    <div class="grid" id="dashboard"></div>
+    <div id="term-table"></div>
+    <div id="dashboard-msg" class="msg hidden"></div>
+  </section>
+
+  <!-- 2. Sections -->
+  <section class="card">
+    <h2>Sections</h2>
+    <div class="row">
+      <label for="yearterm-select">BYU term</label>
+      <select id="yearterm-select"></select>
+      <button id="scrape-btn" class="primary">Scrape term</button>
+      <button id="refresh-btn">Refresh published term now</button>
+    </div>
+    <div id="sections-progress" class="muted" style="margin-top:10px;"></div>
+    <div id="sections-progress-bar" class="progress-bar hidden"><div id="sections-progress-fill"></div></div>
+    <div id="sections-msg" class="msg hidden"></div>
+  </section>
+
+  <!-- 3. Ratings -->
+  <section class="card">
+    <h2>Ratings</h2>
+    <div class="row">
+      <button id="rmp-refresh-btn" class="primary">Refresh new &amp; stale professors</button>
+      <button id="rmp-rematch-btn" class="danger">Re-match everything</button>
+    </div>
+    <div id="rmp-progress" class="muted" style="margin-top:10px;"></div>
+    <div id="ratings-msg" class="msg hidden"></div>
+    <h3 class="muted" style="margin-top:18px;">Needs review</h3>
+    <div id="review-table"></div>
+  </section>
+
+  <!-- 4. Envelopes -->
+  <section class="card">
+    <h2>Envelopes</h2>
+    <div class="row" style="margin-bottom:10px;">
+      <label for="env-term">Term</label>
+      <input id="env-term" type="text" size="8" placeholder="20271">
+      <label for="env-file">Paste from file</label>
+      <input id="env-file" type="file" accept=".txt,text/plain">
+      <button id="download-btn">Download envelopes as JSON</button>
+    </div>
+    <textarea id="env-text" placeholder="Paste the Registration Cart text here (one title line per program, blank line between programs)."></textarea>
+    <div class="row" style="margin-top:10px;">
+      <button id="preview-btn" class="primary">Parse &amp; preview</button>
+      <button id="verify-btn">Verify against schedule</button>
+      <button id="save-term-btn" class="danger">Save (replace whole term)</button>
+      <button id="save-programs-btn">Save (selected programs)</button>
+    </div>
+    <div id="env-preview"></div>
+    <div id="env-report" class="msg hidden"></div>
+  </section>
+
+  <!-- 5. Publish -->
+  <section class="card">
+    <h2>Publish</h2>
+    <div class="row">
+      <label for="publish-term">Term</label>
+      <select id="publish-term"></select>
+      <button id="publish-btn" class="primary">Publish term</button>
+      <label class="check"><input type="checkbox" id="publish-override"> Override failing checks</label>
+    </div>
+    <div id="publish-checklist"></div>
+    <div id="publish-msg" class="msg hidden"></div>
+  </section>
+
+  <!-- 6. Job log -->
+  <section class="card">
+    <h2>Job log</h2>
+    <div id="jobs-table"></div>
+  </section>
+
+</main>
+
+<script>
+"use strict";
+
+// ── tiny DOM helpers (textContent only — never innerHTML with data) ──────────
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined && text !== null) n.textContent = String(text);
+  return n;
+}
+function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+function setMsg(id, text, kind) {
+  const n = document.getElementById(id);
+  clear(n);
+  if (!text) { n.className = "msg hidden"; return; }
+  n.className = "msg " + (kind || "ok");
+  n.textContent = text;
+}
+function buildTable(container, headers, rows, cellBuilder) {
+  clear(container);
+  if (!rows.length) { container.appendChild(el("p", "muted", "(none)")); return; }
+  const table = el("table");
+  const thead = el("thead"); const trh = el("tr");
+  headers.forEach(h => trh.appendChild(el("th", null, h)));
+  thead.appendChild(trh); table.appendChild(thead);
+  const tbody = el("tbody");
+  rows.forEach(r => {
+    const tr = el("tr");
+    r.forEach((cell, i) => {
+      const td = el("td");
+      if (cellBuilder) cellBuilder(td, cell, i, r); else td.textContent = cell == null ? "" : String(cell);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+function pill(kind, text) { return el("span", "pill " + kind, text); }
+
+// ── shared state ─────────────────────────────────────────────────────────────
+const state = { published: null, terms: [], selected: null };
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  if (!res.ok) {
+    let detail = res.status + " " + res.statusText;
+    let body = null;
+    try { body = await res.json(); if (body && body.detail) detail = String(body.detail); } catch (e) {}
+    const err = new Error(detail);
+    err.status = res.status;
+    err.body = body;
+    throw err;
+  }
+  const ct = res.headers.get("content-type") || "";
+  return ct.includes("json") ? res.json() : res.text();
+}
+
+// ── 1. Dashboard ─────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const d = await api("api/status");
+  state.published = d.published_term;
+  state.selected = d.selected_term;
+  state.terms = d.terms;
+
+  const grid = document.getElementById("dashboard");
+  clear(grid);
+  const stats = [
+    ["Published term", d.published_term],
+    ["Sections (selected)", termLabel(d.selected_term)],
+    ["Rating coverage", d.rating_coverage.rated + " / " + d.rating_coverage.total],
+    ["Envelopes ok / withheld", d.envelope_counts.ok + " / " + d.envelope_counts.withheld],
+    ["LLM", d.llm_configured ? ("on" + (d.llm_model ? " · " + d.llm_model : "")) : "off"],
+    ["DB size", fmtBytes(d.db_file_size)],
+    ["Last scrape", fmtTime(d.last_jobs.sections)],
+    ["Last RMP refresh", fmtTime(d.last_jobs.rmp)],
+    ["Last envelope verify", fmtTime(d.last_jobs.envelopes_verify)],
+    ["Jobs running", (d.running.sections || d.running.rmp) ? "yes" : "no"],
+  ];
+  stats.forEach(([k, v]) => {
+    const s = el("div", "stat");
+    s.appendChild(el("div", "k", k));
+    s.appendChild(el("div", "v", v == null ? "—" : v));
+    grid.appendChild(s);
+  });
+
+  buildTable(document.getElementById("term-table"),
+    ["Term", "Sections", "Published"],
+    d.terms.map(t => [t.term, t.section_count, t.published ? "published" : "unpublished"]),
+    (td, cell, i, r) => {
+      if (i === 2) td.appendChild(cell ? pill("ok", cell) : pill("mut", "unpublished"));
+      else td.textContent = String(cell);
+    });
+
+  // Populate publish-term select.
+  const pub = document.getElementById("publish-term");
+  clear(pub);
+  d.terms.forEach(t => {
+    const o = el("option"); o.value = t.term; o.textContent = t.term + (t.published ? " (published)" : "");
+    if (t.published) o.selected = true;
+    pub.appendChild(o);
+  });
+  if (document.getElementById("env-term").value === "") {
+    document.getElementById("env-term").value = d.published_term || "";
+  }
+}
+function termLabel(term) {
+  const t = state.terms.find(x => x.term === term);
+  return t ? term + " (" + t.section_count + " sections)" : term;
+}
+function fmtBytes(n) {
+  if (!n) return "0 B";
+  const u = ["B", "KB", "MB", "GB"]; let i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return n.toFixed(i ? 1 : 0) + " " + u[i];
+}
+function fmtTime(iso) { return iso ? iso.replace("T", " ").slice(0, 19) : "—"; }
+
+// ── 2. Sections ──────────────────────────────────────────────────────────────
+async function loadYearterms() {
+  const sel = document.getElementById("yearterm-select");
+  clear(sel);
+  let options = [];
+  try { options = (await api("api/yearterm")).terms || []; } catch (e) {}
+  if (!options.length) options = state.terms.map(t => ({ term: t.term, label: t.term }));
+  options.forEach(t => {
+    const o = el("option"); o.value = t.term; o.textContent = t.label || t.term;
+    if (t.term === state.published) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+async function scrapeTerm() {
+  const term = document.getElementById("yearterm-select").value;
+  if (!term) return setMsg("sections-msg", "Pick a term first.", "warn");
+  try {
+    setMsg("sections-msg", "Scrape started…");
+    await api("api/sections/scrape", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ term }) });
+    startProgressPoll();
+  } catch (e) { setMsg("sections-msg", String(e.message || e), "bad"); }
+}
+async function refreshPublished() {
+  try {
+    setMsg("sections-msg", "Refresh started…");
+    await api("api/sections/refresh", { method: "POST" });
+    startProgressPoll();
+  } catch (e) { setMsg("sections-msg", String(e.message || e), "bad"); }
+}
+function startProgressPoll() {
+  if (state._poll) clearInterval(state._poll);
+  state._poll = setInterval(async () => {
+    try {
+      const p = await api("api/progress");
+      const s = p.sections, r = p.rmp;
+      if (s && s.departments_total) {
+        const done = s.departments_done || 0;
+        const total = s.departments_total;
+        const pct = Math.round(done / total * 100);
+        document.getElementById("sections-progress").textContent =
+          "Scraping: " + done + " / " + total + " departments" +
+          (s.courses ? " · " + s.courses + " courses" : "") +
+          (s.sections ? " · " + s.sections + " sections" : "");
+        showBar("sections-progress-bar", "sections-progress-fill", pct);
+      } else if (!p.running.sections) {
+        document.getElementById("sections-progress").textContent = "Idle";
+        hideBar("sections-progress-bar");
+      }
+      if (r && r.total) {
+        document.getElementById("rmp-progress").textContent =
+          "RMP: " + r.fetched + " / " + r.total + " fetched · " + r.matched + " matched · " + r.unmatched + " unmatched";
+      } else if (!p.running.rmp) {
+        document.getElementById("rmp-progress").textContent = "Idle";
+      }
+      if (!p.running.sections && !p.running.rmp) {
+        clearInterval(state._poll); state._poll = null;
+        loadDashboard(); loadJobs(); loadReview();
+      }
+    } catch (e) {}
+  }, 2000);
+}
+function showBar(id, fillId, pct) {
+  const b = document.getElementById(id); b.classList.remove("hidden");
+  document.getElementById(fillId).style.width = Math.max(0, Math.min(100, pct)) + "%";
+}
+function hideBar(id) { document.getElementById(id).classList.add("hidden"); }
+
+// ── 3. Ratings ───────────────────────────────────────────────────────────────
+async function refreshRatings() {
+  try {
+    setMsg("ratings-msg", "Refresh started (1 request/second)…");
+    await api("api/ratings/refresh", { method: "POST" });
+    startProgressPoll();
+  } catch (e) { setMsg("ratings-msg", String(e.message || e), "bad"); }
+}
+async function rematchRatings() {
+  if (!confirm("Re-match EVERY professor against RateMyProfessors? This takes a long time.")) return;
+  try {
+    setMsg("ratings-msg", "Re-match started…");
+    await api("api/ratings/rematch", { method: "POST" });
+    startProgressPoll();
+  } catch (e) { setMsg("ratings-msg", String(e.message || e), "bad"); }
+}
+async function loadReview() {
+  const d = await api("api/ratings/review");
+  buildTable(document.getElementById("review-table"),
+    ["BYU name", "Best RMP candidate", "Confidence", "Reason", "Candidates", "Link"],
+    d.professors.map(p => [p.byu_name, p.rmp_name || "—", p.confidence == null ? "—" : p.confidence.toFixed(2), p.reason, p.num_candidates, p.rmp_url]),
+    (td, cell, i) => {
+      if (i === 5 && cell) { const a = el("a"); a.href = cell; a.textContent = "RMP"; a.target = "_blank"; a.rel = "noopener"; td.appendChild(a); }
+      else td.textContent = cell == null ? "—" : String(cell);
+    });
+}
+
+// ── 4. Envelopes ─────────────────────────────────────────────────────────────
+function envTerm() { return document.getElementById("env-term").value.trim(); }
+function envText() { return document.getElementById("env-text").value; }
+async function parsePreview() {
+  const term = envTerm(); const text = envText();
+  if (!term) return setMsg("env-report", "Enter a term first.", "warn");
+  if (!text.trim()) return setMsg("env-report", "Paste the Registration Cart text first.", "warn");
+  try {
+    const d = await api("api/envelopes/preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ term, raw_text: text }) });
+    renderPreview(d.programs);
+    setMsg("env-report", "");
+  } catch (e) { setMsg("env-report", String(e.message || e), "bad"); }
+}
+function renderPreview(programs) {
+  const box = document.getElementById("env-preview");
+  clear(box);
+  if (!programs.length) { box.appendChild(el("p", "muted", "No programs parsed.")); return; }
+  programs.forEach((p, pi) => {
+    const card = el("div", "stat");
+    card.style.marginBottom = "10px";
+    const head = el("div", "row");
+    const cb = el("input"); cb.type = "checkbox"; cb.checked = true; cb.className = "env-check";
+    head.appendChild(cb);
+    const ti = el("input", "title-input"); ti.value = p.display_title || p.title;
+    ti.addEventListener("input", () => { state._titles[p.slug] = ti.value.trim(); });
+    head.appendChild(ti);
+    head.appendChild(el("span", "muted", p.bundles.length + " bundles · " + (p.courses || []).join(", ")));
+    card.appendChild(head);
+    if (p.warnings && p.warnings.length) {
+      p.warnings.forEach(w => card.appendChild(el("div", "muted", "⚠ " + w)));
+    }
+    const btable = el("table");
+    const tbody = el("tbody");
+    (p.bundles || []).forEach(b => {
+      const tr = el("tr");
+      tr.appendChild(el("td", null, b.env_id ? "Env " + b.env_id : "(no Env number)"));
+      tr.appendChild(el("td", null, b.section_count + " sections"));
+      tr.appendChild(el("td", null, (b.courses || []).join(", ")));
+      tbody.appendChild(tr);
+    });
+    btable.appendChild(tbody);
+    card.appendChild(btable);
+    box.appendChild(card);
+  });
+  state._titles = {};
+  state._preview = programs;
+}
+async function verifyEnvelopes() {
+  const term = envTerm(); const text = envText();
+  if (!term || !text.trim()) return setMsg("env-report", "Enter a term and paste text.", "warn");
+  try {
+    const d = await api("api/envelopes/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ term, raw_text: text }) });
+    renderReport(d);
+  } catch (e) { setMsg("env-report", String(e.message || e), "bad"); }
+}
+function renderReport(d) {
+  const lines = [];
+  lines.push("ok " + d.ok_bundles + " · mismatch " + d.mismatch_bundles + " · missing " + d.missing_bundles);
+  (d.problems || []).forEach(p => lines.push("HARD: " + p));
+  (d.warnings || []).forEach(w => lines.push("WARN: " + w));
+  const kind = (d.problems || []).length ? "bad" : ((d.warnings || []).length ? "warn" : "ok");
+  setMsg("env-report", lines.join("\n"), kind);
+}
+async function saveEnvelopes(mode) {
+  const term = envTerm(); const text = envText();
+  if (!term || !text.trim()) return setMsg("env-report", "Enter a term and paste text.", "warn");
+  if (mode === "term" && !confirm("Replace ALL envelopes for term " + term + "? This deletes existing programs for this term.")) return;
+  const body = { term, raw_text: text, mode, slugs: [], titles: state._titles || {} };
+  if (mode === "programs") {
+    const checks = document.querySelectorAll(".env-check");
+    const preview = state._preview || [];
+    preview.forEach((p, i) => { if (checks[i] && checks[i].checked) body.slugs.push(p.slug); });
+    if (!body.slugs.length) return setMsg("env-report", "Select at least one program to save.", "warn");
+  }
+  try {
+    const d = await api("api/envelopes/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    renderReport(d);
+    loadDashboard(); loadJobs();
+  } catch (e) { setMsg("env-report", String(e.message || e), "bad"); }
+}
+async function downloadEnvelopes() {
+  const term = envTerm();
+  if (!term) return setMsg("env-report", "Enter a term first.", "warn");
+  const res = await fetch("api/envelopes/download?term=" + encodeURIComponent(term));
+  if (!res.ok) { setMsg("env-report", "Download failed: " + res.status, "bad"); return; }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = el("a"); a.href = url; a.download = "envelopes-" + term + ".json";
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+// ── 5. Publish ───────────────────────────────────────────────────────────────
+async function publishTerm() {
+  const term = document.getElementById("publish-term").value;
+  const override = document.getElementById("publish-override").checked;
+  if (!term) return setMsg("publish-msg", "Pick a term.", "warn");
+  if (!confirm("Publish term " + term + "? Students will see this term immediately.")) return;
+  try {
+    const d = await api("api/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ term, override }) });
+    renderChecklist(d.checklist);
+    setMsg("publish-msg", "Published " + d.active_term + ".", "ok");
+    loadDashboard();
+  } catch (e) {
+    // 409 carries the checklist; otherwise surface the message.
+    setMsg("publish-msg", String(e.message || e), "bad");
+    if (e && e.body && e.body.checklist) renderChecklist(e.body.checklist);
+  }
+}
+function renderChecklist(c) {
+  const box = document.getElementById("publish-checklist");
+  clear(box);
+  if (!c) return;
+  const rows = [];
+  rows.push(["Sections exist", c.checks.sections_exist]);
+  rows.push(["Section count within 30% of current", c.checks.section_count_within_30_percent]);
+  rows.push(["No hard envelope problems", c.checks.no_hard_envelope_problems]);
+  rows.push(["Rating coverage within 20 points", c.checks.ratings_coverage_ok]);
+  rows.push(["No job running", c.checks.no_job_running]);
+  buildTable(box, ["Check", "Result"],
+    rows.map(([k, ok]) => [k, ok ? "pass" : "FAIL"]),
+    (td, cell, i) => { if (i === 1) td.appendChild(cell === "pass" ? pill("ok", cell) : pill("bad", cell)); else td.textContent = cell; });
+  if (c.blockers && c.blockers.length) {
+    box.appendChild(el("p", "warn", "Blocked by: " + c.blockers.join(", ")));
+  }
+  box.appendChild(el("p", "muted",
+    "Sections " + c.current_section_count + " → " + c.target_section_count +
+    " · coverage " + c.current_coverage_pct + "% → " + c.target_coverage_pct + "%"));
+}
+
+// ── 6. Job log ───────────────────────────────────────────────────────────────
+async function loadJobs() {
+  const d = await api("api/jobs");
+  buildTable(document.getElementById("jobs-table"),
+    ["id", "job", "term", "started", "status", "counts", "error"],
+    d.jobs.map(j => [j.id, j.job, j.term || "—", fmtTime(j.started_at), j.status,
+      j.counts ? JSON.stringify(j.counts) : "—", j.error || "—"]),
+    (td, cell, i, r) => {
+      if (i === 4) {
+        const kind = cell === "ok" ? "ok" : (cell === "error" ? "bad" : "mut");
+        td.appendChild(pill(kind, cell));
+      } else td.textContent = cell == null ? "—" : String(cell);
+    });
+}
+
+// ── wiring ───────────────────────────────────────────────────────────────────
+document.getElementById("scrape-btn").addEventListener("click", scrapeTerm);
+document.getElementById("refresh-btn").addEventListener("click", refreshPublished);
+document.getElementById("rmp-refresh-btn").addEventListener("click", refreshRatings);
+document.getElementById("rmp-rematch-btn").addEventListener("click", rematchRatings);
+document.getElementById("preview-btn").addEventListener("click", parsePreview);
+document.getElementById("verify-btn").addEventListener("click", verifyEnvelopes);
+document.getElementById("save-term-btn").addEventListener("click", () => saveEnvelopes("term"));
+document.getElementById("save-programs-btn").addEventListener("click", () => saveEnvelopes("programs"));
+document.getElementById("download-btn").addEventListener("click", downloadEnvelopes);
+document.getElementById("publish-btn").addEventListener("click", publishTerm);
+document.getElementById("env-file").addEventListener("change", (ev) => {
+  const f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { document.getElementById("env-text").value = String(rd.result || ""); };
+  rd.readAsText(f);
+});
+
+(async function init() {
+  try {
+    await loadDashboard();
+    await Promise.all([loadYearterms(), loadReview(), loadJobs()]);
+  } catch (e) {
+    setMsg("dashboard-msg", "Failed to load: " + (e.message || e), "bad");
+  }
+})();
+</script>
+</body>
+</html>

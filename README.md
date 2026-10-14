@@ -48,12 +48,15 @@ freeroomfinder/
 │   ├── scheduler.html     # Single-page UI
 │   ├── scheduler.js       # All frontend logic (3-step wizard)
 │   ├── scheduler.css      # Styles
+│   ├── admin.html         # Secret per-term refresh admin page (no login)
 │   └── favicon.svg
 ├── backend/
 │   ├── main.py            # FastAPI app, lifespan, static serving
 │   ├── config.py          # Settings, term-code computation
 │   ├── models.py          # Pydantic request/response models
 │   ├── scheduler_api.py   # /api/v1/scheduler/* routes
+│   ├── admin.py           # /next-term/<secret>/* admin routes + security
+│   ├── logging_filter.py  # Redacts ADMIN_PATH_SECRET from all log records
 │   ├── solver.py          # Constraint solver + scoring + bottleneck diagnosis
 │   ├── llm.py             # Constraint parsing + schedule explanations
 │   ├── matching.py        # Course-code normalization + dedup
@@ -100,10 +103,11 @@ set `DISABLE_BACKGROUND_JOBS=1`.
 
 ## Term detection
 
-The scheduler serves the **newest term present in the `sections` table**, so it
-always targets the upcoming registration term once real section data exists.
-Before any data is scraped it falls back to an algorithmic estimate of the
-current term (`YYYYT`, e.g. `20265` = Fall 2026).
+The scheduler serves the **published term**: `settings.active_term` if an admin
+has set it, otherwise the newest term present in the `sections` table. Terms
+that are scraped but not yet published are invisible to students. Before any
+data is scraped it falls back to an algorithmic estimate of the current term
+(`YYYYT`, e.g. `20265` = Fall 2026).
 
 | Suffix | Semester | Approx. dates |
 |---|---|---|
@@ -136,6 +140,8 @@ following into it. `.env` is git-ignored.
 | `DAILY_SCRAPE_INTERVAL_SECONDS` | No | Scrape cadence inside the registration window (default `86400`) |
 | `SCHEDULER_TIMEOUT_SECONDS` | No | Per-request ceiling on the solver (default `20`) |
 | `GENERATE_RATE_LIMIT` | No | `/schedules/generate` requests/min/IP (default `10`) |
+| `ADMIN_PATH_SECRET` | No | Secret path token (≥ 24 chars) that enables the `/next-term/*` admin page |
+| `TRUST_PROXY` | No | `1` to trust `X-Forwarded-For` for per-IP rate limits (set behind Railway's proxy) |
 
 ---
 
@@ -193,6 +199,120 @@ git push
 ```
 
 Railway picks up the push and redeploys automatically.
+
+---
+
+## Per-term refresh (secret admin page)
+
+The admin page lives at a secret URL and is used to scrape a new term, refresh
+RateMyProfessors ratings, paste and verify Registration Cart envelopes, and
+publish the new term. There is **no login, cookie, or session** — the secret is
+part of the URL itself, and the page uses relative URLs so the secret is never
+hardcoded in a file.
+
+### Generating the secret
+
+```bash
+python3 -c "import secrets; print(secrets.token_urlsafe(24))"
+```
+
+Copy the output into your environment as `ADMIN_PATH_SECRET`. If the variable
+is unset or shorter than 24 characters, every `/next-term/*` route returns a
+plain 404 (the feature is off).
+
+### Setting it in Railway
+
+1. Open your Railway project → **Variables**.
+2. Add `ADMIN_PATH_SECRET` with the generated token.
+3. (Recommended) add `TRUST_PROXY=1` so per-IP rate limits see the real client
+   IP through Railway's proxy.
+4. Redeploy.
+
+### Bookmark URL
+
+```
+https://<your-domain>/next-term/<ADMIN_PATH_SECRET>/
+```
+
+For example, if your secret is `AbCd1234_...`, bookmark:
+
+```
+https://freeroomfinder-production.up.railway.app/next-term/AbCd1234_.../
+```
+
+### The per-term process (top to bottom)
+
+1. **Sections** — pick the new term from BYU's yearterm list, click **Scrape
+   term** (a background job with live progress), or **Refresh published term
+   now** to re-scrape the current one.
+2. **Ratings** — click **Refresh new &amp; stale professors** (default,
+   ~1 request/sec) or **Re-match everything** (a long-running pass; confirm
+   dialog). Review the **Needs review** table (low confidence / multiple
+   candidates) before publishing.
+3. **Envelopes** — paste the Registration Cart text for the term (or upload the
+   `.txt`), **Parse &amp; preview**, then **Verify against schedule**. Fix any
+   hard problems, edit display titles if needed, then **Save**. The database is
+   the source of truth; the raw text is also stored in `envelope_sources` for
+   backup, and **Download envelopes as JSON** gives you a portable backup.
+4. **Publish** — the pre-publish checklist (sections exist, section count within
+   30% of the current term, no hard envelope problems, rating coverage within 20
+   points, no job running) blocks publishing unless it passes; an explicit
+   **Override** checkbox bypasses it.
+5. **Job log** — the last 50 `job_runs` rows show what ran and its counts.
+
+### Rotating the secret
+
+Generate a new token, update `ADMIN_PATH_SECRET` in Railway, and redeploy. The
+old URL stops working immediately (404). Update your bookmark.
+
+### ⚠️ Keep the URL private
+
+Anyone with the URL can scrape terms, refresh ratings, edit envelopes, and
+publish. Never share it, log it, or commit it. The app redacts the secret from
+its own logs, but your browser history still contains it.
+
+---
+
+## Envelopes (Registration Cart bundles)
+
+Some programs (Marriott junior cores, SFL 221/222, Learning Communities, Math
+213/215, …) require registering for a **pre-bundled envelope** rather than
+individual sections. BYU's schedule data carries no envelope flag and the
+bundles can't be derived by rules, so the source of truth is the text of the
+Registration Cart's "Choose an envelope" screens, pasted once per term.
+
+The envelope data lives in `data/envelopes/<term>/<slug>.json` (parsed from the
+raw paste), loaded idempotently into the DB at startup, and verified against
+the scraped schedule so only `ok` bundles are offered to students.
+
+### Refreshing envelopes each term
+
+1. Open the Registration Cart's envelope screens in myBYU.
+2. Copy the text of each program's list into `data/envelopes/raw/<term>.txt`,
+   with a title line per program and blank lines between programs (keep the
+   titles exactly as they appear, even if misspelled).
+3. Parse the paste into committed JSON:
+
+   ```bash
+   python scripts/import_cart_text.py data/envelopes/raw/20271.txt --term 20271
+   ```
+
+4. Verify every bundle against the scraped schedule:
+
+   ```bash
+   python scripts/check_envelopes.py --term 20271
+   ```
+
+   Any `mismatch` (meeting/room/instructor drift) or `missing` (a section not
+   in the DB) bundle fails the check with a non-zero exit; only `ok` bundles
+   are offered to students.
+5. Commit the generated `data/envelopes/<term>/*.json` files. Production starts
+   from an empty DB, so the committed JSON is what ships.
+
+The CLI scripts (`scripts/import_cart_text.py`, `scripts/check_envelopes.py`)
+still work and remain the offline alternative; the admin page wraps the same
+verify logic with a live preview. `scripts/check_envelopes.py --strict` also
+fails on soft warnings (instructor-name changes), matching the admin checklist.
 
 ---
 

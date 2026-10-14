@@ -17,7 +17,7 @@ Design notes
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Optional
 
 import aiosqlite
@@ -27,6 +27,7 @@ from .matching import closest_courses, normalize_course_code, title_case_name
 from .models import (
     BottleneckDiagnosis,
     CourseFilterReport,
+    EnvelopeFilterReport,
     MeetingOut,
     ScheduleMetrics,
     ScheduleOut,
@@ -93,6 +94,25 @@ class Section:
     avg_difficulty: Optional[float] = None
     would_take_again: Optional[float] = None
     num_ratings: Optional[int] = None
+    # Half-semester support: ISO 'YYYY-MM-DD' (None => full-term / unknown).
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    # Envelope provenance (set only on sections placed via an envelope).
+    via_envelope: Optional[str] = None
+    env_id: Optional[str] = None
+    captured_at: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class Bundle:
+    """One verified-ok envelope bundle: a fixed group of sections placed together."""
+    env_slug: str
+    env_title: str
+    env_id: Optional[str]
+    captured_at: str
+    bundle_index: int
+    sections: tuple[Section, ...]   # already tagged with via_envelope/env_id
+    courses: frozenset[str]
 
 
 # ── Conflict detection ────────────────────────────────────────────────────────
@@ -103,8 +123,24 @@ def meetings_overlap(a: Meeting, b: Meeting) -> bool:
     return a.day == b.day and a.start_min < b.end_min and b.start_min < a.end_min
 
 
+def _dates_overlap(a: Section, b: Section) -> bool:
+    """True when two sections' term date ranges overlap.
+
+    Missing dates (either side NULL) mean "full term / unknown", which overlaps
+    everything — this preserves the old behavior on databases that predate the
+    ``start_date`` / ``end_date`` migration.
+    """
+    if (a.start_date is None or a.end_date is None
+            or b.start_date is None or b.end_date is None):
+        return True
+    return max(a.start_date, b.start_date) <= min(a.end_date, b.end_date)
+
+
 def sections_conflict(a: Section, b: Section) -> bool:
-    """Two sections conflict if ANY of their meetings overlap."""
+    """Two sections conflict iff their date ranges overlap AND any meeting
+    overlaps (same weekday + overlapping [start, end) interval)."""
+    if not _dates_overlap(a, b):
+        return False
     for ma in a.meetings:
         for mb in b.meetings:
             if meetings_overlap(ma, mb):
@@ -168,7 +204,7 @@ async def load_sections(term: str, course_codes: list[str]) -> dict[str, list[Se
         async with db.execute(
             f"""
             SELECT s.id, s.course_code, s.section_number, s.title, s.is_online,
-                   s.seats_open, s.instructor_id,
+                   s.seats_open, s.instructor_id, s.start_date, s.end_date,
                    p.byu_name, p.rmp_id, p.rmp_name,
                    p.avg_difficulty, p.avg_rating,
                    p.would_take_again, p.num_ratings
@@ -235,8 +271,97 @@ async def load_sections(term: str, course_codes: list[str]) -> dict[str, list[Se
             avg_difficulty=r["avg_difficulty"],
             would_take_again=r["would_take_again"],
             num_ratings=r["num_ratings"],
+            start_date=r["start_date"],
+            end_date=r["end_date"],
         )
         out.setdefault(r["course_code"], []).append(section)
+    return out
+
+
+async def load_sections_by_ids(term: str, section_ids: list[int]) -> dict[int, Section]:
+    """Load Section objects (with meetings + ease) for specific section ids.
+
+    Used to resolve envelope bundle sections to full ``Section`` objects.
+    Returns {section_id: Section} in deterministic order.
+    """
+    if not section_ids:
+        return {}
+    await database.init_schedule_db()
+
+    async with aiosqlite.connect(database.DB) as db:
+        db.row_factory = aiosqlite.Row
+        ph = ",".join("?" for _ in section_ids)
+        async with db.execute(
+            f"""
+            SELECT s.id, s.course_code, s.section_number, s.title, s.is_online,
+                   s.seats_open, s.instructor_id, s.start_date, s.end_date,
+                   p.byu_name, p.rmp_id, p.rmp_name,
+                   p.avg_difficulty, p.avg_rating,
+                   p.would_take_again, p.num_ratings
+            FROM sections s
+            LEFT JOIN professors p ON p.id = s.instructor_id
+            WHERE s.term = ? AND s.id IN ({ph})
+            ORDER BY s.id
+            """,
+            [term, *section_ids],
+        ) as cur:
+            rows = await cur.fetchall()
+
+    meetings_by_section: dict[int, list[Meeting]] = {}
+    async with aiosqlite.connect(database.DB) as db:
+        db.row_factory = aiosqlite.Row
+        ph = ",".join("?" for _ in section_ids)
+        async with db.execute(
+            f"""
+            SELECT section_id, day, start_min, end_min, building, room
+            FROM meetings
+            WHERE section_id IN ({ph})
+            ORDER BY section_id, day, start_min
+            """,
+            section_ids,
+        ) as cur:
+            for mr in await cur.fetchall():
+                meetings_by_section.setdefault(mr["section_id"], []).append(
+                    Meeting(mr["day"], mr["start_min"], mr["end_min"],
+                            mr["building"], mr["room"])
+                )
+
+    out: dict[int, Section] = {}
+    for r in rows:
+        if r["instructor_id"] is None:
+            ease, conf, lacks = 50.0, 0.0, True
+        else:
+            prof = {
+                "avg_difficulty": r["avg_difficulty"],
+                "avg_rating": r["avg_rating"],
+                "would_take_again": r["would_take_again"],
+                "num_ratings": r["num_ratings"],
+            }
+            ease, conf = rmp.ease_score(prof)
+            lacks = (prof["num_ratings"] or 0) < 3
+
+        out[r["id"]] = Section(
+            id=r["id"],
+            course_code=r["course_code"],
+            section_number=r["section_number"],
+            is_online=bool(r["is_online"]),
+            seats_open=r["seats_open"],
+            instructor_id=r["instructor_id"],
+            instructor_name=r["byu_name"],
+            ease_score=ease,
+            ease_confidence=conf,
+            lacks_ratings=lacks,
+            meetings=tuple(meetings_by_section.get(r["id"], [])),
+            title=r["title"],
+            rmp_id=r["rmp_id"],
+            rmp_name=r["rmp_name"],
+            avg_rating=r["avg_rating"],
+            avg_difficulty=r["avg_difficulty"],
+            would_take_again=r["would_take_again"],
+            num_ratings=r["num_ratings"],
+            start_date=r["start_date"],
+            end_date=r["end_date"],
+        )
     return out
 
 
@@ -434,23 +559,41 @@ def score_schedule(
 
 # ── Backtracking search ───────────────────────────────────────────────────────
 
-def search(
-    courses_sections: list[tuple[str, list[Section]]],
+def search_options(
+    options: list[list[tuple[Section, ...]]],
     *,
     max_schedules: int = MAX_SCHEDULES,
     deadline_seconds: float = TIME_LIMIT_SECONDS,
 ) -> tuple[list[tuple[Section, ...]], bool]:
-    """Backtracking: one section per course, pruning on the first conflict.
+    """Backtracking over decision groups, each picking one *option* (a tuple of
+    sections to place together — a single course section, or an envelope
+    bundle's whole section group).
 
-    ``courses_sections`` must already be ordered fewest-sections-first.
-    Returns (list_of_assignments, hit_cap) where ``hit_cap`` is True when the
-    search stopped because of the schedule cap or the time deadline.
+    ``options`` must be ordered fewest-options-first. Each returned assignment
+    is a flat tuple of every chosen section (across all groups).
     """
     start = time.monotonic()
-    n = len(courses_sections)
-    current: list[Optional[Section]] = [None] * n
+    n = len(options)
+    current: list[Optional[tuple[Section, ...]]] = [None] * n
     assignments: list[tuple[Section, ...]] = []
     stopped = False
+
+    def _option_ok(i: int, opt: tuple[Section, ...]) -> bool:
+        # Within-option: a bundle's own sections must not conflict with each
+        # other (identical ids are shared sections and never conflict).
+        for a in range(len(opt)):
+            for b in range(a + 1, len(opt)):
+                if opt[a].id != opt[b].id and sections_conflict(opt[a], opt[b]):
+                    return False
+        for j in range(i):
+            chosen = current[j]
+            if chosen is None:
+                continue
+            for s in opt:
+                for prev in chosen:
+                    if s.id != prev.id and sections_conflict(s, prev):
+                        return False
+        return True
 
     def backtrack(i: int) -> None:
         nonlocal stopped
@@ -463,18 +606,20 @@ def search(
             stopped = True
             return
         if i == n:
-            assignments.append(tuple(current))  # type: ignore[arg-type]
+            flat: list[Section] = []
+            seen_ids: set[int] = set()
+            for opt in current:
+                for s in opt or ():
+                    # Sections shared between bundles (same id) are placed once.
+                    if s.id in seen_ids:
+                        continue
+                    seen_ids.add(s.id)
+                    flat.append(s)
+            assignments.append(tuple(flat))
             return
-        _, sections = courses_sections[i]
-        for section in sections:
-            ok = True
-            for j in range(i):
-                prev = current[j]
-                if prev is not None and sections_conflict(section, prev):
-                    ok = False
-                    break
-            if ok:
-                current[i] = section
+        for opt in options[i]:
+            if _option_ok(i, opt):
+                current[i] = opt
                 backtrack(i + 1)
                 current[i] = None
                 if stopped:
@@ -482,6 +627,23 @@ def search(
 
     backtrack(0)
     return assignments, stopped
+
+
+def search(
+    courses_sections: list[tuple[str, list[Section]]],
+    *,
+    max_schedules: int = MAX_SCHEDULES,
+    deadline_seconds: float = TIME_LIMIT_SECONDS,
+) -> tuple[list[tuple[Section, ...]], bool]:
+    """Backtracking: one section per course, pruning on the first conflict.
+
+    ``courses_sections`` must already be ordered fewest-sections-first.
+    Returns (list_of_assignments, hit_cap) where ``hit_cap`` is True when the
+    search stopped because of the schedule cap or the time deadline.
+    """
+    options = [[(s,) for s in sections] for _, sections in courses_sections]
+    return search_options(options, max_schedules=max_schedules,
+                          deadline_seconds=deadline_seconds)
 
 
 def _sort_key(item: tuple[float, dict, tuple[Section, ...]]):
@@ -499,11 +661,17 @@ def _sort_key(item: tuple[float, dict, tuple[Section, ...]]):
 
 
 def _shared_sections(a: tuple[Section, ...], b: tuple[Section, ...]) -> int:
-    return sum(1 for sa, sb in zip(a, b) if sa.id == sb.id)
+    return len({s.id for s in a} & {s.id for s in b})
 
 
 def _meaningfully_different(a: tuple[Section, ...], b: tuple[Section, ...], n: int) -> bool:
-    """True when the two schedules share a section for <= half the courses."""
+    """True when the two schedules share a section for <= half the *choices*.
+
+    ``n`` is the number of decision groups (plain courses + envelopes); an
+    envelope bundle contributes several sections but is still one choice, so
+    comparing shared section *ids* (rather than a positional zip) keeps two
+    bundle choices distinct even when they share an individual section.
+    """
     return 2 * _shared_sections(a, b) <= n
 
 
@@ -640,6 +808,9 @@ def _section_out(s: Section) -> SectionOut:
                        building=m.building, room=m.room)
             for m in s.meetings
         ],
+        via_envelope=s.via_envelope,
+        env_id=s.env_id,
+        captured_at=s.captured_at,
     )
 
 
@@ -660,6 +831,69 @@ def _schedule_out(score: float, metrics: dict, assignment: tuple[Section, ...]) 
     )
 
 
+# ── Envelope loading ──────────────────────────────────────────────────────────
+
+def _with_envelope(s: Section, title: str, env_id: Optional[str],
+                   captured_at: str) -> Section:
+    return replace(s, via_envelope=title, env_id=env_id, captured_at=captured_at)
+
+
+async def _load_envelope_bundles(
+    term: str, slugs: list[str]
+) -> tuple[dict[str, list[Bundle]], dict[str, str]]:
+    """Load verified-ok bundles for the requested envelope slugs.
+
+    Returns ({slug: [Bundle, ...]}, {slug: display_title}). A requested slug
+    with no ok bundles yields an empty list (caller decides how to report it).
+    """
+    db_envelopes = await database.get_envelopes(term)
+    titles: dict[str, str] = {}
+    raw: list[tuple] = []  # (slug, title, env_id, captured_at, idx, ids, courses)
+    for env in db_envelopes:
+        if env["slug"] not in slugs:
+            continue
+        titles[env["slug"]] = env["display_title"]
+        for b in env["bundles"]:
+            if b["ok"] != 1:
+                continue
+            raw.append((
+                env["slug"], env["display_title"], b["env_id"],
+                env["captured_at"], b["bundle_index"],
+                [s["section_id"] for s in b["sections"] if s.get("section_id") is not None],
+                [s["course_code"] for s in b["sections"]],
+            ))
+
+    all_ids = [sid for r in raw for sid in r[5]]
+    sections_by_id = await load_sections_by_ids(term, all_ids)
+
+    by_slug: dict[str, list[Bundle]] = {s: [] for s in slugs}
+    for slug, title, env_id, captured_at, idx, sec_ids, courses in raw:
+        secs = tuple(
+            _with_envelope(sections_by_id[sid], title, env_id, captured_at)
+            for sid in sec_ids if sid in sections_by_id
+        )
+        by_slug.setdefault(slug, []).append(
+            Bundle(slug, title, env_id, captured_at, idx, secs, frozenset(courses))
+        )
+    return by_slug, titles
+
+
+def _apply_bundle(bundle: Bundle, req: SolverRequest,
+                  blocked: list[tuple[str, int, int]]) -> tuple[bool, dict[str, int]]:
+    """Hard filters apply to the whole bundle: keep it only if every section
+    passes. Returns (keep, removed_count_by_filter)."""
+    kept, removed = apply_hard_filters(
+        list(bundle.sections),
+        allow_online=req.allow_online,
+        skip_full_sections=req.skip_full_sections,
+        earliest_start_min=req.earliest_start_min,
+        latest_end_min=req.latest_end_min,
+        blocked_times=blocked,
+        days_off=req.days_off,
+    )
+    return len(kept) == len(bundle.sections), removed
+
+
 # ── Public entry point ────────────────────────────────────────────────────────
 
 async def solve_schedule(req: SolverRequest) -> SolverResponse:
@@ -676,30 +910,90 @@ async def solve_schedule(req: SolverRequest) -> SolverResponse:
             )
 
     blocked = _blocked_tuples(req)
+
+    env_slugs = list(dict.fromkeys(req.envelopes or []))  # dedupe, keep order
+    env_bundles: dict[str, list[Bundle]] = {}
+    env_titles: dict[str, str] = {}
+    if env_slugs:
+        env_bundles, env_titles = await _load_envelope_bundles(req.term, env_slugs)
+        for slug in env_slugs:
+            if slug not in env_titles:
+                raise SolverError(
+                    f"No enrollment envelope {slug!r} for term {req.term}."
+                )
+
+    # A plain course that a selected envelope covers is satisfied by the
+    # envelope's section (removed from the plain-course list).
+    env_courses: dict[str, set[str]] = {
+        slug: {c for b in bundles for c in b.courses}
+        for slug, bundles in env_bundles.items()
+    }
+    covered = [c for c in codes
+               if any(c in env_courses.get(slug, set()) for slug in env_slugs)]
+    plain_codes = [c for c in codes if c not in covered]
+
+    # Restrict each envelope to bundles containing every *listed* covered
+    # course, but only when some (not all) of its bundles contain it.
+    env_candidates: dict[str, list[Bundle]] = {}
+    for slug in env_slugs:
+        bundles = list(env_bundles.get(slug, []))
+        for c in covered:
+            if c not in env_courses.get(slug, set()):
+                continue
+            containing = [b for b in bundles if c in b.courses]
+            if len(containing) < len(bundles):
+                bundles = containing
+        env_candidates[slug] = bundles
+
+    # Filter plain courses.
     filtered: dict[str, list[Section]] = {}
-    for code in codes:
+    for code in plain_codes:
         filtered[code], _ = _apply(req, loaded[code], blocked)
 
-    # If any course has zero remaining sections, there is no schedule at all.
-    if any(not filtered[code] for code in codes):
-        return SolverResponse(
-            schedules=[],
-            cap_hit=False,
-            bottleneck=diagnose_bottleneck(codes, loaded, req),
-        )
+    # Filter envelope bundles (whole-bundle hard filters).
+    env_kept: dict[str, list[Bundle]] = {}
+    envelope_problems: list[EnvelopeFilterReport] = []
+    for slug in env_slugs:
+        kept: list[Bundle] = []
+        removed_agg = {name: 0 for name in FILTER_NAMES}
+        for bundle in env_candidates[slug]:
+            keep, removed = _apply_bundle(bundle, req, blocked)
+            if keep:
+                kept.append(bundle)
+            else:
+                for k, v in removed.items():
+                    removed_agg[k] += v
+        env_kept[slug] = kept
+        if env_candidates[slug] and not kept:
+            envelope_problems.append(EnvelopeFilterReport(
+                slug=slug,
+                title=env_titles[slug],
+                removed_by={k: v for k, v in removed_agg.items() if v},
+            ))
 
-    courses_sections = sorted(
-        ((code, filtered[code]) for code in codes),
-        key=lambda cs: (len(cs[1]), cs[0]),
-    )
-    assignments, cap_hit = search(courses_sections)
+    # Early out: a plain course has no sections left, or an envelope has no
+    # surviving bundle.
+    if any(not filtered[code] for code in plain_codes) or envelope_problems:
+        diag = diagnose_bottleneck(plain_codes, loaded, req)
+        diag.envelope_problems = envelope_problems
+        return SolverResponse(schedules=[], cap_hit=False, bottleneck=diag)
+
+    # Build decision groups: plain courses (single-section options) then
+    # envelopes (whole-bundle options).
+    groups: list[tuple[str, list[tuple[Section, ...]]]] = []
+    for code in plain_codes:
+        groups.append((code, [(s,) for s in filtered[code]]))
+    for slug in env_slugs:
+        groups.append((slug, [tuple(b.sections) for b in env_kept[slug]]))
+
+    groups.sort(key=lambda g: (len(g[1]), g[0]))
+    options = [g[1] for g in groups]
+    assignments, cap_hit = search_options(options)
 
     if not assignments:
-        return SolverResponse(
-            schedules=[],
-            cap_hit=cap_hit,
-            bottleneck=diagnose_bottleneck(codes, loaded, req),
-        )
+        diag = diagnose_bottleneck(plain_codes, loaded, req)
+        diag.envelope_problems = envelope_problems
+        return SolverResponse(schedules=[], cap_hit=cap_hit, bottleneck=diag)
 
     scored: list[tuple[float, dict, tuple[Section, ...]]] = []
     for assignment in assignments:
@@ -708,7 +1002,7 @@ async def solve_schedule(req: SolverRequest) -> SolverResponse:
 
     scored.sort(key=_sort_key)
 
-    n = len(codes)
+    n = len(groups)
     chosen: list[tuple[float, dict, tuple[Section, ...]]] = []
     for entry in scored:
         if len(chosen) >= 3:

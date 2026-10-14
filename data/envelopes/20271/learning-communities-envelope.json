@@ -1,0 +1,653 @@
+{
+  "title": "Learning communities envelope",
+  "display_title": "Learning Communities Envelope",
+  "slug": "learning-communities-envelope",
+  "term": "20271",
+  "captured_at": "2026-10-13",
+  "bundles": [
+    {
+      "env_id": "28530",
+      "capacity_snapshot": 20,
+      "seats_snapshot": 14,
+      "sections": [
+        {
+          "course_code": "ENGL 230",
+          "section_number": "001",
+          "instructor_snapshot": "Jon Ostenson",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "JFSB B150"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "JFSB B150"
+            }
+          ]
+        },
+        {
+          "course_code": "UNIV 101",
+          "section_number": "007",
+          "instructor_snapshot": "James LeCheminant",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "HGB 180"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "HGB 180"
+            }
+          ]
+        },
+        {
+          "course_code": "RELA 275",
+          "section_number": "029",
+          "instructor_snapshot": "Heidi Smith",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 780,
+              "end_min": 830,
+              "room": "JFSB B092"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 780,
+              "end_min": 830,
+              "room": "JFSB B092"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28531",
+      "capacity_snapshot": 20,
+      "seats_snapshot": 14,
+      "sections": [
+        {
+          "course_code": "ENGL 230",
+          "section_number": "001",
+          "instructor_snapshot": "Jon Ostenson",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "JFSB B150"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "JFSB B150"
+            }
+          ]
+        },
+        {
+          "course_code": "UNIV 101",
+          "section_number": "060",
+          "instructor_snapshot": "Dawan Coombs",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "MSRB 250"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "MSRB 250"
+            }
+          ]
+        },
+        {
+          "course_code": "RELA 275",
+          "section_number": "029",
+          "instructor_snapshot": "Heidi Smith",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 780,
+              "end_min": 830,
+              "room": "JFSB B092"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 780,
+              "end_min": 830,
+              "room": "JFSB B092"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28532",
+      "capacity_snapshot": 20,
+      "seats_snapshot": 17,
+      "sections": [
+        {
+          "course_code": "WRTG 150",
+          "section_number": "074",
+          "instructor_snapshot": "Keola Quereto",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 780,
+              "end_min": 830,
+              "room": "JFSB B160"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 780,
+              "end_min": 830,
+              "room": "JFSB B160"
+            },
+            {
+              "day": "Friday",
+              "start_min": 780,
+              "end_min": 830,
+              "room": "JFSB B160"
+            }
+          ]
+        },
+        {
+          "course_code": "UNIV 101",
+          "section_number": "016",
+          "instructor_snapshot": "Marie Orton",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 840,
+              "end_min": 890,
+              "room": "KMBL 245"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 840,
+              "end_min": 890,
+              "room": "KMBL 245"
+            }
+          ]
+        },
+        {
+          "course_code": "RELA 275",
+          "section_number": "019",
+          "instructor_snapshot": "Ryan Sharp",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 780,
+              "end_min": 830,
+              "room": "BNSN W111"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 780,
+              "end_min": 830,
+              "room": "BNSN W111"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28533",
+      "capacity_snapshot": 20,
+      "seats_snapshot": 0,
+      "sections": [
+        {
+          "course_code": "WRTG 150",
+          "section_number": "075",
+          "instructor_snapshot": "TBD",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "JFSB B160"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "JFSB B160"
+            }
+          ]
+        },
+        {
+          "course_code": "UNIV 101",
+          "section_number": "054",
+          "instructor_snapshot": "Mike Goates",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "HBLL 4722"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "HBLL 4722"
+            }
+          ]
+        },
+        {
+          "course_code": "RELA 275",
+          "section_number": "008",
+          "instructor_snapshot": "Brad Wilcox",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 600,
+              "end_min": 650,
+              "room": "JKB 1104"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 600,
+              "end_min": 650,
+              "room": "JKB 1104"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28534",
+      "capacity_snapshot": 20,
+      "seats_snapshot": 15,
+      "sections": [
+        {
+          "course_code": "WRTG 150",
+          "section_number": "054",
+          "instructor_snapshot": "TBD",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "JKB 1121"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "JKB 1121"
+            }
+          ]
+        },
+        {
+          "course_code": "UNIV 101",
+          "section_number": "004",
+          "instructor_snapshot": "Jordan Watkins",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 600,
+              "end_min": 650,
+              "room": "JSB 163"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 600,
+              "end_min": 650,
+              "room": "JSB 163"
+            }
+          ]
+        },
+        {
+          "course_code": "RELA 275",
+          "section_number": "025",
+          "instructor_snapshot": "Heidi Smith",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "JFSB B092"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "JFSB B092"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28535",
+      "capacity_snapshot": 20,
+      "seats_snapshot": 19,
+      "sections": [
+        {
+          "course_code": "WRTG 150",
+          "section_number": "076",
+          "instructor_snapshot": "TBD",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 540,
+              "end_min": 590,
+              "room": "ESC C266"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 540,
+              "end_min": 590,
+              "room": "ESC C266"
+            },
+            {
+              "day": "Friday",
+              "start_min": 540,
+              "end_min": 590,
+              "room": "ESC C266"
+            }
+          ]
+        },
+        {
+          "course_code": "UNIV 101",
+          "section_number": "061",
+          "instructor_snapshot": "Charles Graham",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 540,
+              "end_min": 590,
+              "room": "MCKB 185"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 540,
+              "end_min": 590,
+              "room": "MCKB 185"
+            }
+          ]
+        },
+        {
+          "course_code": "RELA 275",
+          "section_number": "025",
+          "instructor_snapshot": "Heidi Smith",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "JFSB B092"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "JFSB B092"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28536",
+      "capacity_snapshot": 24,
+      "seats_snapshot": 20,
+      "sections": [
+        {
+          "course_code": "PHYS 100",
+          "section_number": "014",
+          "instructor_snapshot": "Michael Ware",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 600,
+              "end_min": 650,
+              "room": "CB 377"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 600,
+              "end_min": 650,
+              "room": "CB 377"
+            },
+            {
+              "day": "Friday",
+              "start_min": 600,
+              "end_min": 650,
+              "room": "CB 377"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 600,
+              "end_min": 650,
+              "room": "ESC N127"
+            }
+          ]
+        },
+        {
+          "course_code": "UNIV 101",
+          "section_number": "014",
+          "instructor_snapshot": "Randy Lewis",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 540,
+              "end_min": 590,
+              "room": "JSB 163"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 540,
+              "end_min": 590,
+              "room": "JSB 163"
+            }
+          ]
+        },
+        {
+          "course_code": "RELA 275",
+          "section_number": "025",
+          "instructor_snapshot": "Heidi Smith",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "JFSB B092"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "JFSB B092"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28537",
+      "capacity_snapshot": 24,
+      "seats_snapshot": 21,
+      "sections": [
+        {
+          "course_code": "PHYS 100",
+          "section_number": "015",
+          "instructor_snapshot": "Michael Ware",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 600,
+              "end_min": 650,
+              "room": "CB 377"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 600,
+              "end_min": 650,
+              "room": "CB 377"
+            },
+            {
+              "day": "Friday",
+              "start_min": 600,
+              "end_min": 650,
+              "room": "CB 377"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "ESC N127"
+            }
+          ]
+        },
+        {
+          "course_code": "UNIV 101",
+          "section_number": "028",
+          "instructor_snapshot": "Gaye Strathearn",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 720,
+              "end_min": 770,
+              "room": "JSB 163"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 720,
+              "end_min": 770,
+              "room": "JSB 163"
+            }
+          ]
+        },
+        {
+          "course_code": "RELA 275",
+          "section_number": "025",
+          "instructor_snapshot": "Heidi Smith",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "JFSB B092"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "JFSB B092"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

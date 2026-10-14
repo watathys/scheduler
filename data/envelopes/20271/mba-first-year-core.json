@@ -1,0 +1,241 @@
+{
+  "title": "MBA first year core",
+  "display_title": "MBA First Year Core",
+  "slug": "mba-first-year-core",
+  "term": "20271",
+  "captured_at": "2026-10-13",
+  "bundles": [
+    {
+      "env_id": "28538",
+      "capacity_snapshot": 50,
+      "seats_snapshot": 50,
+      "sections": [
+        {
+          "course_code": "MBA 560",
+          "section_number": "001",
+          "instructor_snapshot": "Matt Madden",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2319"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2319"
+            }
+          ]
+        },
+        {
+          "course_code": "MBA 570",
+          "section_number": "001",
+          "instructor_snapshot": "Trent Williams",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": "1",
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 2319"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 2319"
+            }
+          ]
+        },
+        {
+          "course_code": "MBA 580",
+          "section_number": "001",
+          "instructor_snapshot": "Timothy Gubler",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 2319"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 2319"
+            }
+          ]
+        },
+        {
+          "course_code": "MBA 584",
+          "section_number": "001",
+          "instructor_snapshot": "Bruce Money",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": "2",
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 2319"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 2319"
+            }
+          ]
+        },
+        {
+          "course_code": "MBA 693",
+          "section_number": "015",
+          "instructor_snapshot": "Taeya Howell",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 2319"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28539",
+      "capacity_snapshot": 50,
+      "seats_snapshot": 50,
+      "sections": [
+        {
+          "course_code": "MBA 560",
+          "section_number": "002",
+          "instructor_snapshot": "Matt Madden",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 2325"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 2325"
+            }
+          ]
+        },
+        {
+          "course_code": "MBA 570",
+          "section_number": "002",
+          "instructor_snapshot": "Trent Williams",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": "1",
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2325"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2325"
+            }
+          ]
+        },
+        {
+          "course_code": "MBA 580",
+          "section_number": "002",
+          "instructor_snapshot": "Timothy Gubler",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 2325"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 2325"
+            }
+          ]
+        },
+        {
+          "course_code": "MBA 584",
+          "section_number": "002",
+          "instructor_snapshot": "Bruce Money",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": "2",
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2325"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2325"
+            }
+          ]
+        },
+        {
+          "course_code": "MBA 693",
+          "section_number": "016",
+          "instructor_snapshot": "Taeya Howell",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Wednesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 2319"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "title": "Math 213 & 215 Envelope",
+  "display_title": "MATH 213 & 215 Envelope",
+  "slug": "math-213-215-envelope",
+  "term": "20271",
+  "captured_at": "2026-10-13",
+  "bundles": [
+    {
+      "env_id": "28499",
+      "capacity_snapshot": 50,
+      "seats_snapshot": 50,
+      "sections": [
+        {
+          "course_code": "MATH 213",
+          "section_number": "007",
+          "instructor_snapshot": "Blake Barker",
+          "mode": null,
+          "credits": 2.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "TMCB 135"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "TMCB 135"
+            }
+          ]
+        },
+        {
+          "course_code": "MATH 215",
+          "section_number": "002",
+          "instructor_snapshot": "Blake Barker",
+          "mode": null,
+          "credits": 1.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Friday",
+              "start_min": 660,
+              "end_min": 710,
+              "room": "TMCB 135"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

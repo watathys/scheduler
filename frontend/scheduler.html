@@ -45,6 +45,22 @@
 
       <div class="chips" id="course-chips" aria-label="Selected courses"></div>
       <p class="step-hint count-hint" id="course-count" aria-live="polite">0 of 8 courses added</p>
+
+      <div class="envelope-picker">
+        <div class="envelope-picker-head">
+          <span class="field-label" id="envelope-label">Taking a pre-bundled core? Add an envelope</span>
+          <span class="step-hint envelope-hint">Optional — pick one if your program uses the Registration Cart's "Choose an envelope".</span>
+        </div>
+        <div class="autocomplete">
+          <label class="sr-only" for="envelope-input">Search for an envelope</label>
+          <input id="envelope-input" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="Search envelopes… e.g. Strat junior core"
+                 role="combobox" aria-autocomplete="list" aria-expanded="false"
+                 aria-controls="envelope-suggestions" aria-activedescendant="">
+          <ul id="envelope-suggestions" class="suggestions" role="listbox" hidden></ul>
+        </div>
+        <div class="chips" id="envelope-chips" aria-label="Selected envelopes"></div>
+      </div>
     </div>
 
     <!-- Step 2: Preferences -->

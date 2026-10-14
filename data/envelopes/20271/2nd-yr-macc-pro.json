@@ -1,0 +1,173 @@
+{
+  "title": "2nd yr MACc Pro",
+  "display_title": "2nd Year MAcc Program",
+  "slug": "2nd-yr-macc-pro",
+  "term": "20271",
+  "captured_at": "2026-10-13",
+  "bundles": [
+    {
+      "env_id": "28520",
+      "capacity_snapshot": 35,
+      "seats_snapshot": 35,
+      "sections": [
+        {
+          "course_code": "ACC 531",
+          "section_number": "001",
+          "instructor_snapshot": "Ryan Sommerfeldt",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Thursday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1401"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 541",
+          "section_number": "001",
+          "instructor_snapshot": "Travis Dyer",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1401"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28521",
+      "capacity_snapshot": 35,
+      "seats_snapshot": 35,
+      "sections": [
+        {
+          "course_code": "ACC 531",
+          "section_number": "002",
+          "instructor_snapshot": "Ryan Sommerfeldt",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1401"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 541",
+          "section_number": "002",
+          "instructor_snapshot": "Travis Dyer",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1401"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28522",
+      "capacity_snapshot": 35,
+      "seats_snapshot": 35,
+      "sections": [
+        {
+          "course_code": "ACC 531",
+          "section_number": "003",
+          "instructor_snapshot": "Ryan Sommerfeldt",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1401"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 541",
+          "section_number": "003",
+          "instructor_snapshot": "Travis Dyer",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1401"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28523",
+      "capacity_snapshot": 35,
+      "seats_snapshot": 35,
+      "sections": [
+        {
+          "course_code": "ACC 531",
+          "section_number": "004",
+          "instructor_snapshot": "Ryan Sommerfeldt",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Thursday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1401"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 541",
+          "section_number": "004",
+          "instructor_snapshot": "Travis Dyer",
+          "mode": null,
+          "credits": 1.5,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1401"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

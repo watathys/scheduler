@@ -42,6 +42,7 @@ const state = {
   step: 0,
   maxReached: 0,
   courses: [],            // [{code, title, credits, section_count}]
+  envelopes: [],          // [{slug, title, courses, ok_bundles}]
   preferences: DEFAULT_PREFS.slice(),  // rank 1..3
   daysOff: ["Friday"],
   earliestStart: "08:00",
@@ -335,6 +336,174 @@ function validateCourses() {
   return true;
 }
 
+// ── Step 1: envelopes ────────────────────────────────────────────────────────
+const envelopeInput = $id("envelope-input");
+const envelopeSuggestionsBox = $id("envelope-suggestions");
+let allEnvelopes = [];         // fetched once from /envelopes
+let activeEnvelopeSuggestion = -1;
+let envelopeLoaded = false;
+
+envelopeInput.addEventListener("input", onEnvelopeInput);
+envelopeInput.addEventListener("keydown", onEnvelopeKeydown);
+envelopeInput.addEventListener("blur", () => {
+  setTimeout(() => { if (document.activeElement !== envelopeSuggestionsBox) clearEnvelopeSuggestions(); }, 150);
+});
+
+async function loadEnvelopes() {
+  if (envelopeLoaded) return;
+  envelopeLoaded = true;
+  try {
+    const res = await fetch("/api/v1/scheduler/envelopes");
+    if (!res.ok) return;
+    const data = await res.json();
+    // Only offer envelopes that actually have verified-ok bundles.
+    allEnvelopes = (data || []).filter((e) => e.ok_bundles > 0);
+  } catch (e) {
+    allEnvelopes = [];
+  }
+}
+
+function onEnvelopeInput() {
+  const q = envelopeInput.value.trim();
+  if (q.length < 1) { clearEnvelopeSuggestions(); return; }
+  const ql = q.toLowerCase();
+  const matches = allEnvelopes
+    .filter((e) => e.title.toLowerCase().includes(ql)
+      || (e.courses || []).some((c) => c.toLowerCase().includes(ql)))
+    .slice(0, 8);
+  activeEnvelopeSuggestion = matches.length ? 0 : -1;
+  renderEnvelopeSuggestions(matches);
+}
+
+function renderEnvelopeSuggestions(items) {
+  envelopeSuggestionsBox.innerHTML = "";
+  if (!items || items.length === 0) {
+    envelopeSuggestionsBox.hidden = true;
+    envelopeInput.setAttribute("aria-expanded", "false");
+    envelopeInput.removeAttribute("aria-activedescendant");
+    return;
+  }
+  envelopeSuggestionsBox.hidden = false;
+  envelopeInput.setAttribute("aria-expanded", "true");
+  items.forEach((item, i) => {
+    const li = el("li", "suggestion" + (i === activeEnvelopeSuggestion ? " is-active" : ""));
+    li.setAttribute("role", "option");
+    li.setAttribute("id", `envelope-sug-${i}`);
+    li.setAttribute("aria-selected", i === activeEnvelopeSuggestion ? "true" : "false");
+    li.appendChild(el("span", "sug-code", item.title));
+    if (item.courses && item.courses.length) {
+      li.appendChild(el("span", "sug-title", item.courses.join(", ")));
+    }
+    li.addEventListener("mousedown", (e) => { e.preventDefault(); addEnvelope(item); });
+    envelopeSuggestionsBox.appendChild(li);
+  });
+  envelopeInput.setAttribute("aria-activedescendant", `envelope-sug-${activeEnvelopeSuggestion}`);
+}
+
+function clearEnvelopeSuggestions() {
+  envelopeSuggestionsBox.innerHTML = "";
+  envelopeSuggestionsBox.hidden = true;
+  activeEnvelopeSuggestion = -1;
+  envelopeInput.setAttribute("aria-expanded", "false");
+  envelopeInput.removeAttribute("aria-activedescendant");
+}
+
+function onEnvelopeKeydown(e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const visible = allEnvelopes.filter((env) => {
+      const q = envelopeInput.value.trim().toLowerCase();
+      return !q || env.title.toLowerCase().includes(q)
+        || (env.courses || []).some((c) => c.toLowerCase().includes(q));
+    }).slice(0, 8);
+    if (visible.length && activeEnvelopeSuggestion >= 0) addEnvelope(visible[activeEnvelopeSuggestion]);
+    return;
+  }
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    const items = envelopeSuggestionsBox.querySelectorAll(".suggestion");
+    if (items.length) {
+      activeEnvelopeSuggestion = (activeEnvelopeSuggestion + 1) % items.length;
+      renderEnvelopeSuggestions(visibleEnvelopesForInput());
+    }
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    const items = envelopeSuggestionsBox.querySelectorAll(".suggestion");
+    if (items.length) {
+      activeEnvelopeSuggestion = (activeEnvelopeSuggestion - 1 + items.length) % items.length;
+      renderEnvelopeSuggestions(visibleEnvelopesForInput());
+    }
+  } else if (e.key === "Escape") {
+    clearEnvelopeSuggestions();
+  }
+}
+
+function visibleEnvelopesForInput() {
+  const q = envelopeInput.value.trim().toLowerCase();
+  return allEnvelopes
+    .filter((e) => !q || e.title.toLowerCase().includes(q)
+      || (e.courses || []).some((c) => c.toLowerCase().includes(q)))
+    .slice(0, 8);
+}
+
+function addEnvelope(item) {
+  if (!item || !item.slug) return;
+  if (state.envelopes.some((e) => e.slug === item.slug)) {
+    announce("That envelope is already added.");
+    return;
+  }
+  state.envelopes.push({
+    slug: item.slug,
+    title: item.title,
+    courses: (item.courses || []).slice(),
+    ok_bundles: item.ok_bundles || 0,
+  });
+  renderEnvelopeChips();
+  clearEnvelopeSuggestions();
+  envelopeInput.value = "";
+  envelopeInput.focus();
+}
+
+function removeEnvelope(index) {
+  state.envelopes.splice(index, 1);
+  renderEnvelopeChips();
+}
+
+function renderEnvelopeChips() {
+  const wrap = $id("envelope-chips");
+  wrap.innerHTML = "";
+  state.envelopes.forEach((env, i) => {
+    const chip = el("div", "envelope-chip");
+    const body = el("div", "envelope-chip-body");
+    body.hidden = true;
+    if (env.courses && env.courses.length) {
+      body.appendChild(el("div", "envelope-chip-courses", env.courses.join(" · ")));
+    }
+
+    const head = el("button", "envelope-chip-toggle");
+    head.type = "button";
+    head.setAttribute("aria-expanded", "false");
+    head.appendChild(el("span", "chip-code", env.title));
+    head.appendChild(el("span", "envelope-chip-caret", "▾"));
+    head.addEventListener("click", () => {
+      const open = body.hidden;
+      body.hidden = !open;
+      head.setAttribute("aria-expanded", String(open));
+      chip.classList.toggle("is-open", open);
+    });
+
+    const remove = el("button", "chip-remove", "×");
+    remove.type = "button";
+    remove.setAttribute("aria-label", `Remove ${env.title}`);
+    remove.addEventListener("click", () => removeEnvelope(i));
+
+    chip.appendChild(head);
+    chip.appendChild(remove);
+    chip.appendChild(body);
+    wrap.appendChild(chip);
+  });
+}
+
 // ── Step 2: preferences ───────────────────────────────────────────────────────
 function renderPreferences() {
   const list = $id("pref-list");
@@ -498,6 +667,7 @@ async function submit() {
     latest_end: state.latestEnd,
     allow_online: state.allowOnline,
   };
+  if (state.envelopes.length) payload.envelopes = state.envelopes.map((e) => e.slug);
   if (state.extraText.trim()) payload.extra_constraints_text = state.extraText.trim();
 
   try {
@@ -638,7 +808,7 @@ function renderResults(data) {
     const panel = el("section", "option-panel" + (i === 0 ? " is-active" : ""));
     panel.setAttribute("role", "tabpanel");
     panel.id = `option-panel-${i}`;
-    panel.appendChild(renderOptionCard(sched, i, colorMap));
+    panel.appendChild(renderOptionCard(sched, i, colorMap, data.term));
     panels.appendChild(panel);
   });
 
@@ -685,11 +855,13 @@ function fmtScore(n) {
   return Number.isFinite(v) ? v.toFixed(1) : "—";
 }
 
-function renderOptionCard(sched, index, colorMap) {
+function renderOptionCard(sched, index, colorMap, term) {
   const layout = el("div", "option-layout");
 
-  // Main column: calendar + online classes.
+  // Main column: envelope notice (if any) + calendar + online classes.
   const main = el("div", "option-main");
+  const envNotice = buildEnvelopeNotice(sched, term);
+  if (envNotice) main.appendChild(envNotice);
   const calCard = el("div", "card card-flush");
   calCard.appendChild(renderCalendar(sched, colorMap));
   main.appendChild(calCard);
@@ -758,6 +930,50 @@ function renderScoreCard(sched, index) {
   return side;
 }
 
+// ── Envelope notice ──────────────────────────────────────────────────────────
+function buildEnvelopeNotice(sched, term) {
+  const envSections = (sched.sections || []).filter((s) => s.via_envelope);
+  if (!envSections.length) return null;
+
+  const card = el("section", "card envelope-notice");
+  card.setAttribute("aria-label", "Envelope registration required");
+  card.appendChild(el("h3", "card-title", "Envelope registration"));
+
+  // Group sections by their envelope id (fall back to the title).
+  const groups = [];
+  const indexByKey = new Map();
+  envSections.forEach((s) => {
+    const key = s.env_id || s.via_envelope;
+    if (!indexByKey.has(key)) {
+      indexByKey.set(key, { envId: s.env_id, title: s.via_envelope, capturedAt: s.captured_at, sections: [] });
+      groups.push(indexByKey.get(key));
+    }
+    indexByKey.get(key).sections.push(s);
+  });
+
+  groups.forEach((g) => {
+    const block = el("div", "envelope-notice-block");
+    block.appendChild(el("p", "envelope-notice-title", g.title));
+    block.appendChild(el("p", "envelope-notice-rule",
+      "Register in the Registration Cart by choosing the envelope that lists exactly these sections"));
+    const list = el("ul", "envelope-notice-list");
+    g.sections.forEach((s) => {
+      list.appendChild(el("li", null, `${s.course_code} ${s.section_number}`));
+    });
+    block.appendChild(list);
+    const meta = g.envId
+      ? `Env ${g.envId} (Env numbers are specific to ${term} and the date this list was captured ${g.capturedAt})`
+      : `This envelope was captured ${g.capturedAt}`;
+    block.appendChild(el("p", "envelope-notice-meta", meta));
+    card.appendChild(block);
+  });
+
+  card.appendChild(el("p", "envelope-notice-disclaimer",
+    "Some envelopes are restricted to certain programs or students. Confirm eligibility in myBYU."));
+
+  return card;
+}
+
 // ── Calendar grid ─────────────────────────────────────────────────────────────
 function renderCalendar(sched, colorMap) {
   const sections = (sched.sections || []).filter((s) => (s.meetings || []).length > 0);
@@ -814,6 +1030,7 @@ function renderCalendar(sched, colorMap) {
         block.style.height = `${height}px`;
         block.style.backgroundColor = color;
         block.appendChild(el("div", "cal-block-code", sec.course_code));
+        if (sec.via_envelope) block.appendChild(el("div", "cal-block-badge", "Envelope"));
         block.appendChild(el("div", "cal-block-time", fmtRange(m.start_min, m.end_min)));
         const locParts = [];
         if (m.building && m.room) locParts.push(`${m.building} ${m.room}`);
@@ -1063,6 +1280,7 @@ function relaxationText(label) {
 // ── Restart ───────────────────────────────────────────────────────────────────
 function restart() {
   state.courses = [];
+  state.envelopes = [];
   state.preferences = DEFAULT_PREFS.slice();
   state.daysOff = ["Friday"];
   state.earliestStart = "08:00";
@@ -1074,8 +1292,10 @@ function restart() {
   state.selectedOption = 0;
   state.maxReached = 0;
   $id("course-input").value = "";
+  $id("envelope-input").value = "";
   $id("extra-text").value = "";
   renderChips();
+  renderEnvelopeChips();
   showView("stepper");
   showStep(0);
   announce("Started over.");
@@ -1085,6 +1305,7 @@ function restart() {
 function init() {
   initTheme();
   populateTimeDropdowns();
+  loadEnvelopes();
 
   $id("btn-theme").addEventListener("click", toggleTheme);
   $id("btn-next").addEventListener("click", goNext);

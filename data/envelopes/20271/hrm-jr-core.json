@@ -1,0 +1,102 @@
+{
+  "title": "HRM jr core",
+  "display_title": "HRM Junior Core",
+  "slug": "hrm-jr-core",
+  "term": "20271",
+  "captured_at": "2026-10-13",
+  "bundles": [
+    {
+      "env_id": "28511",
+      "capacity_snapshot": 70,
+      "seats_snapshot": 70,
+      "sections": [
+        {
+          "course_code": "HRM 402",
+          "section_number": "001",
+          "instructor_snapshot": "Cody Reeves",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 2439"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 2439"
+            }
+          ]
+        },
+        {
+          "course_code": "HRM 411",
+          "section_number": "001",
+          "instructor_snapshot": "Peter Madsen",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2124"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2124"
+            }
+          ]
+        },
+        {
+          "course_code": "HRM 412",
+          "section_number": "001",
+          "instructor_snapshot": "Troy Nielson",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 2439"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 2439"
+            }
+          ]
+        },
+        {
+          "course_code": "MSB 325",
+          "section_number": "001",
+          "instructor_snapshot": "Richard Gardner",
+          "mode": "Blended",
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": true,
+          "meetings": [
+            {
+              "day": "Wednesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 2256"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

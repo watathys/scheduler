@@ -7,6 +7,7 @@ test.
 
 import asyncio
 import base64
+import json
 import os
 import sys
 
@@ -16,7 +17,7 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import backend.main as main  # noqa: E402
-from backend import database, scheduler_api  # noqa: E402
+from backend import database, envelopes, scheduler_api  # noqa: E402
 from backend.config import settings  # noqa: E402
 
 TERM = "20271"
@@ -36,6 +37,8 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(database, "DB", db_path)
     monkeypatch.setattr(settings, "db_path", db_path)
     monkeypatch.setattr(settings, "current_term", TERM)
+    # Isolate envelope JSON so startup never reads the committed data/envelopes.
+    monkeypatch.setattr(envelopes, "ENVELOPES_DIR", tmp_path / "envelopes")
 
     # Rate limiter state is global; start each test clean.
     scheduler_api._generate_rate.clear()
@@ -424,3 +427,84 @@ def test_empty_db_returns_503_data_loading(client):
 
     s = client.get("/api/v1/scheduler/status")
     assert s.json()["status"] == "loading"
+
+
+# ── Envelopes ───────────────────────────────────────────────────────────────
+
+def _write_env_json(slug, bundles):
+    d = envelopes.json_dir_for_term(TERM)
+    d.mkdir(parents=True, exist_ok=True)
+    (d / f"{slug}.json").write_text(json.dumps({
+        "title": slug.replace("-", " ").title(),
+        "display_title": slug.replace("-", " ").title(),
+        "slug": slug,
+        "term": TERM,
+        "captured_at": "2026-10-13",
+        "bundles": bundles,
+    }), encoding="utf-8")
+
+
+def _load_and_verify(slug, bundles):
+    _write_env_json(slug, bundles)
+    asyncio.run(envelopes.load_envelopes(TERM))
+    asyncio.run(envelopes.verify_envelopes(TERM))
+
+
+def _env_section(course_code, number, meetings, instructor="TBD"):
+    return {
+        "course_code": course_code, "section_number": number,
+        "instructor_snapshot": instructor, "mode": None, "credits": 3.0,
+        "part_of_term": None, "note_flag": False,
+        "meetings": [{"day": d, "start_min": s, "end_min": e, "room": r}
+                     for (d, s, e, r) in meetings],
+    }
+
+
+def _env_bundle(env_id, sections):
+    return {"env_id": env_id, "capacity_snapshot": 10, "seats_snapshot": 10,
+            "sections": sections}
+
+
+def test_envelopes_endpoint_lists_active_term(client):
+    _seed_section("EXDM 415", "001", [M("Monday", 480, 555, "TNRB", "1258")])
+    _seed_section("EXDM 416", "001", [M("Monday", 570, 645, "TNRB", "1258")])
+    _load_and_verify("exdm-core", [
+        _env_bundle("28004", [
+            _env_section("EXDM 415", "001", [("Monday", 480, 555, "TNRB 1258")]),
+            _env_section("EXDM 416", "001", [("Monday", 570, 645, "TNRB 1258")]),
+        ]),
+    ])
+
+    r = client.get("/api/v1/scheduler/envelopes")
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 1
+    env = data[0]
+    assert env["slug"] == "exdm-core"
+    assert env["title"] == "Exdm Core"
+    assert env["ok_bundles"] == 1
+    assert env["total_bundles"] == 1
+    assert set(env["courses"]) == {"EXDM 415", "EXDM 416"}
+    assert env["captured_at"] == "2026-10-13"
+
+
+def test_generate_with_envelope_returns_tagged_sections(client):
+    _seed_section("EXDM 415", "001", [M("Monday", 480, 555, "TNRB", "1258")])
+    _seed_section("EXDM 416", "001", [M("Monday", 570, 645, "TNRB", "1258")])
+    _load_and_verify("exdm-core", [
+        _env_bundle("28004", [
+            _env_section("EXDM 415", "001", [("Monday", 480, 555, "TNRB 1258")]),
+            _env_section("EXDM 416", "001", [("Monday", 570, 645, "TNRB 1258")]),
+        ]),
+    ])
+
+    r = _generate(client, courses=["EXDM 415", "EXDM 416"], envelopes=["exdm-core"])
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok"
+    sched = body["schedules"][0]
+    assert len(sched["sections"]) == 2
+    for s in sched["sections"]:
+        assert s["via_envelope"] == "Exdm Core"
+        assert s["env_id"] == "28004"
+        assert s["captured_at"] == "2026-10-13"

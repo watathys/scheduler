@@ -1,0 +1,1102 @@
+EXDM junior core
+Ross Storey
+EXDM 415
+Section 001
+44/44 seats left
+3 CREDITS
+MW
+9:30a - 10:45a
+TNRB 1258
+Peter Ward
+EXDM 416
+Section 001
+44/44 seats left
+3 CREDITS
+MW
+8a - 9:15a
+TNRB 1258
+Env 28504
+Select
+Ross Storey
+EXDM 415
+Section 002
+44/44 seats left
+3 CREDITS
+MW
+3:30p - 4:45p
+TNRB 2124
+Peter Ward
+EXDM 416
+Section 002
+44/44 seats left
+3 CREDITS
+MW
+2p - 3:15p
+TNRB 1258
+Env 28508
+Select
+Camilla Hodge
+EXDM 415
+Section 003
+44/44 seats left
+3 CREDITS
+TTh
+8a - 9:15a
+TNRB 1244
+Peter Ward
+EXDM 416
+Section 003
+44/44 seats left
+3 CREDITS
+TTh
+9:30a - 10:45a
+TNRB 1439
+Env 28509
+Select
+Jim Anderson
+EXDM 415
+Section 004
+44/44 seats left
+3 CREDITS
+TTh
+12:30p - 1:45p
+TNRB 1258
+Jim Anderson
+EXDM 416
+Section 004
+44/44 seats left
+3 CREDITS
+TTh
+2p - 3:15p
+TNRB 1321
+Env 28510
+Select
+
+HRM jr core
+Cody Reeves
+HRM 402
+Section 001
+70/70 seats left
+
+3 CREDITS
+
+TTh
+8a - 9:15a
+TNRB 2439
+
+blue info icon
+Note
+Peter Madsen
+HRM 411
+Section 001
+70/70 seats left
+
+3 CREDITS
+
+TTh
+12:30p - 1:45p
+TNRB 2124
+
+blue info icon
+Note
+Troy Nielson
+HRM 412
+Section 001
+70/70 seats left
+
+3 CREDITS
+
+TTh
+9:30a - 10:45a
+TNRB 2439
+Richard Gardner
+MSB 325
+Section 001
+Blended
+info icon
+70/70 seats left
+
+3 CREDITS
+
+W
+12:30p - 1:45p
+TNRB 2256
+
+blue info icon
+Note
+Env 28511
+Select
+Winter 2027 Schedule
+
+Menu
+
+
+
+
+MON
+
+TUE
+
+WED
+
+THU
+
+FRI
+
+SAT
+
+8 AM
+
+9 AM
+
+10 AM
+
+11 AM
+
+12 PM
+
+1 PM
+
+2 PM
+
+3 PM
+
+4 PM
+
+M COM 320
+12:30-1:45
+REL C 320
+2:00-2:50
+STRAT 412
+9:30-10:45
+STRAT 432
+11:00-12:15
+STRAT 411
+9:30-10:45
+M COM 320
+12:30-1:45
+REL C 320
+2:00-2:50
+STRAT 412
+9:30-10:45
+STRAT 411
+9:30-10:45
+
+Strat jr core
+David Bryce
+STRAT 411
+Section 001
+35/35 seats left
+3 CREDITS
+TTh
+9:30a - 10:45a
+TNRB 1258
+Ben Lewis
+STRAT 412
+Section 001
+35/35 seats left
+3 CREDITS
+MW
+9:30a - 10:45a
+TNRB 2124
+Mark Hansen
+STRAT 432
+Section 001
+35/35 seats left
+1.5 CREDITS
+M
+11a - 12:15p
+TNRB 3325
+Env 28512
+Select
+David Bryce
+STRAT 411
+Section 003
+38/38 seats left
+3 CREDITS
+TTh
+2p - 3:15p
+TNRB 1230
+Ben Lewis
+STRAT 412
+Section 002
+38/38 seats left
+3 CREDITS
+MW
+12:30p - 1:45p
+TNRB 2325
+Mark Hansen
+STRAT 432
+Section 002
+38/38 seats left
+1.5 CREDITS
+W
+11a - 12:15p
+TNRB 3325
+Env 28513
+Select
+David Bryce
+STRAT 411
+Section 002
+19/19 seats left
+3 CREDITS
+TTh
+12:30p - 1:45p
+TNRB 1230
+Ben Lewis
+STRAT 412
+Section 001
+19/19 seats left
+3 CREDITS
+MW
+9:30a - 10:45a
+TNRB 2124
+Mark Hansen
+STRAT 432
+Section 001
+19/19 seats left
+1.5 CREDITS
+M
+11a - 12:15p
+TNRB 3325
+Env 28514
+Select
+David Bryce
+STRAT 411
+Section 002
+17/17 seats left
+3 CREDITS
+TTh
+12:30p - 1:45p
+TNRB 1230
+Ben Lewis
+STRAT 412
+Section 002
+17/17 seats left
+3 CREDITS
+MW
+12:30p - 1:45p
+TNRB 2325
+Mark Hansen
+STRAT 432
+Section 002
+17/17 seats left
+1.5 CREDITS
+W
+11a - 12:15p
+TNRB 3325
+Env 28515
+Select
+
+IS jr core
+Taylor Wells
+IS 414
+Section 001
+44/44 seats left
+3 CREDITS
+MW
+8a - 9:15a
+TNRB 3319
+Tanner Skousen
+IS 455
+Section 001
+44/44 seats left
+3 CREDITS
+TTh
+9:30a - 10:45a
+TNRB 3319
+Ryan Schuetzler
+IS 456
+Section 001
+44/44 seats left
+3 CREDITS
+TTh
+8a - 9:15a
+TNRB 3319
+Env 28516
+Select
+Taylor Wells
+IS 414
+Section 002
+44/44 seats left
+3 CREDITS
+MW
+9:30a - 10:45a
+TNRB 3325
+Tanner Skousen
+IS 455
+Section 002
+44/44 seats left
+3 CREDITS
+TTh
+8a - 9:15a
+TNRB 3325
+Ryan Schuetzler
+IS 456
+Section 002
+44/44 seats left
+3 CREDITS
+TTh
+9:30a - 10:45a
+TNRB 3325
+Env 28517
+Select
+Taylor Wells
+IS 414
+Section 003
+44/44 seats left
+3 CREDITS
+MW
+12:30p - 1:45p
+TNRB 3319
+Tanner Skousen
+IS 455
+Section 003
+44/44 seats left
+3 CREDITS
+TTh
+2p - 3:15p
+TNRB 3319
+Ryan Schuetzler
+IS 456
+Section 003
+44/44 seats left
+3 CREDITS
+TTh
+12:30p - 1:45p
+TNRB 3319
+Env 28518
+Select
+Taylor Wells
+IS 414
+Section 004
+44/44 seats left
+3 CREDITS
+MW
+2p - 3:15p
+TNRB 3325
+Tanner Skousen
+IS 455
+Section 004
+44/44 seats left
+3 CREDITS
+TTh
+12:30p - 1:45p
+TNRB 3325
+Ryan Schuetzler
+IS 456
+Section 004
+44/44 seats left
+3 CREDITS
+TTh
+2p - 3:15p
+TNRB 3325
+Env 28519
+Select
+
+Accountin jr core
+Hannah Judd
+ACC 405
+Section 001
+65/65 seats left
+3 CREDITS
+MW
+9:30a - 10:45a
+TNRB 1106
+Nicole Smith
+ACC 406
+Section 001
+65/65 seats left
+3 CREDITS
+MW
+8a - 9:15a
+TNRB 1106
+Scott Summers
+ACC 407
+Section 001
+65/65 seats left
+3 CREDITS
+TTh
+9:30a - 10:45a
+TNRB 1106
+Brittley Eldredge
+ACC 504
+Section 001
+65/65 seats left
+3 CREDITS
+TTh
+8a - 9:15a
+TNRB 1106
+Env 28524
+Select
+Amanda Pope
+ACC 405
+Section 002
+65/65 seats left
+3 CREDITS
+MW
+8a - 9:15a
+TNRB 1124
+Nicole Smith
+ACC 406
+Section 002
+65/65 seats left
+3 CREDITS
+MW
+9:30a - 10:45a
+TNRB 1124
+Scott Summers
+ACC 407
+Section 002
+65/65 seats left
+3 CREDITS
+TTh
+8a - 9:15a
+TNRB 1124
+Brittley Eldredge
+ACC 504
+Section 002
+65/65 seats left
+3 CREDITS
+TTh
+9:30a - 10:45a
+TNRB 1124
+Env 28525
+Select
+Amanda Pope
+ACC 405
+Section 003
+55/55 seats left
+3 CREDITS
+MW
+9:30a - 10:45a
+TNRB 1140
+Paul Schneider
+ACC 406
+Section 003
+55/55 seats left
+3 CREDITS
+MW
+8a - 9:15a
+TNRB 1140
+David Wood
+ACC 407
+Section 003
+55/55 seats left
+3 CREDITS
+TTh
+8a - 9:15a
+TNRB 1140
+Chad Hugie
+ACC 504
+Section 003
+55/55 seats left
+3 CREDITS
+TTh
+9:30a - 10:45a
+TNRB 1140
+Env 28526
+Select
+Amanda Pope
+ACC 405
+Section 004
+65/65 seats left
+3 CREDITS
+MW
+2p - 3:15p
+TNRB 1106
+Brant Christensen
+ACC 406
+Section 004
+65/65 seats left
+3 CREDITS
+MW
+12:30p - 1:45p
+TNRB 1106
+Scott Summers
+ACC 407
+Section 004
+65/65 seats left
+3 CREDITS
+TTh
+2p - 3:15p
+TNRB 1106
+Brittley Eldredge
+ACC 504
+Section 004
+65/65 seats left
+3 CREDITS
+TTh
+12:30p - 1:45p
+TNRB 1106
+Env 28527
+Select
+Hannah Judd
+ACC 405
+Section 005
+65/65 seats left
+3 CREDITS
+MW
+2p - 3:15p
+TNRB 1124
+Nicole Smith
+ACC 406
+Section 005
+65/65 seats left
+3 CREDITS
+MW
+12:30p - 1:45p
+TNRB 1124
+Scott Summers
+ACC 407
+Section 005
+65/65 seats left
+3 CREDITS
+TTh
+12:30p - 1:45p
+TNRB 1124
+Brittley Eldredge
+ACC 504
+Section 005
+65/65 seats left
+3 CREDITS
+TTh
+2p - 3:15p
+TNRB 1124
+Env 28528
+Select
+Hannah Judd
+ACC 405
+Section 006
+60/60 seats left
+3 CREDITS
+MW
+12:30p - 1:45p
+TNRB 1140
+Paul Schneider
+ACC 406
+Section 006
+60/60 seats left
+3 CREDITS
+MW
+2p - 3:15p
+TNRB 1140
+David Wood
+ACC 407
+Section 006
+60/60 seats left
+3 CREDITS
+TTh
+2p - 3:15p
+TNRB 1140
+Chad Hugie
+ACC 504
+Section 006
+60/60 seats left
+3 CREDITS
+TTh
+12:30p - 1:45p
+TNRB 1140
+Env 28529
+Select
+
+2nd yr MACc Pro
+Ryan Sommerfeldt
+ACC 531
+Section 001
+35/35 seats left
+1.5 CREDITS
+Th
+8a - 9:15a
+TNRB 1401
+Travis Dyer
+ACC 541
+Section 001
+35/35 seats left
+1.5 CREDITS
+T
+8a - 9:15a
+TNRB 1401
+Env 28520
+Select
+Ryan Sommerfeldt
+ACC 531
+Section 002
+35/35 seats left
+1.5 CREDITS
+Th
+9:30a - 10:45a
+TNRB 1401
+Travis Dyer
+ACC 541
+Section 002
+35/35 seats left
+1.5 CREDITS
+T
+9:30a - 10:45a
+TNRB 1401
+Env 28521
+Select
+Ryan Sommerfeldt
+ACC 531
+Section 003
+35/35 seats left
+1.5 CREDITS
+Th
+12:30p - 1:45p
+TNRB 1401
+Travis Dyer
+ACC 541
+Section 003
+35/35 seats left
+1.5 CREDITS
+T
+12:30p - 1:45p
+TNRB 1401
+Env 28522
+Select
+Ryan Sommerfeldt
+ACC 531
+Section 004
+35/35 seats left
+1.5 CREDITS
+Th
+2p - 3:15p
+TNRB 1401
+Travis Dyer
+ACC 541
+Section 004
+35/35 seats left
+1.5 CREDITS
+T
+2p - 3:15p
+TNRB 1401
+Env 28523
+Select
+
+MBA first year core
+Matt Madden
+MBA 560
+Section 001
+50/50 seats left
+3 CREDITS
+TTh
+12:30p - 1:45p
+TNRB 2319
+Trent Williams
+MBA 570
+Section 001
+50/50 seats left
+1.5 CREDITS
+TERM 1
+TTh
+9:30a - 10:45a
+TNRB 2319
+Timothy Gubler
+MBA 580
+Section 001
+50/50 seats left
+3 CREDITS
+TTh
+8a - 9:15a
+TNRB 2319
+Bruce Money
+MBA 584
+Section 001
+50/50 seats left
+1.5 CREDITS
+TERM 2
+TTh
+9:30a - 10:45a
+TNRB 2319
+Taeya Howell
+MBA 693
+Section 015
+50/50 seats left
+1.5 CREDITS
+M
+8a - 9:15a
+TNRB 2319
+Note
+Env 28538
+Select
+Matt Madden
+MBA 560
+Section 002
+50/50 seats left
+3 CREDITS
+TTh
+8a - 9:15a
+TNRB 2325
+Trent Williams
+MBA 570
+Section 002
+50/50 seats left
+1.5 CREDITS
+TERM 1
+TTh
+12:30p - 1:45p
+TNRB 2325
+Timothy Gubler
+MBA 580
+Section 002
+50/50 seats left
+3 CREDITS
+TTh
+9:30a - 10:45a
+TNRB 2325
+Bruce Money
+MBA 584
+Section 002
+50/50 seats left
+1.5 CREDITS
+TERM 2
+TTh
+12:30p - 1:45p
+TNRB 2325
+Taeya Howell
+MBA 693
+Section 016
+50/50 seats left
+1.5 CREDITS
+W
+8a - 9:15a
+TNRB 2319
+Note
+Env 28539
+Select
+
+sfl 221 and 222 envelope
+Anne Ure
+SFL 222
+Section 001
+3/3 seats left
+3 CREDITS
+MW
+7:45a - 11:30a
+JFSB 1100
+Note
+Anne Ure
+SFL 221
+Section 001
+3/3 seats left
+1 CREDIT
+F
+9a - 9:50a
+JFSB 1081
+Note
+Env 28500
+Select
+Anne Ure
+SFL 222
+Section 002
+3/3 seats left
+3 CREDITS
+MW
+12:15p - 4p
+JFSB 1100
+Note
+Anne Ure
+SFL 221
+Section 001
+3/3 seats left
+1 CREDIT
+F
+9a - 9:50a
+JFSB 1081
+Note
+Env 28501
+Select
+Anne Ure
+SFL 222
+Section 003
+3/3 seats left
+3 CREDITS
+T
+7:45a - 10:50a
+JFSB 1100
+Th
+7:45a - 11:30a
+JFSB 1100
+Note
+Anne Ure
+SFL 221
+Section 001
+3/3 seats left
+1 CREDIT
+F
+9a - 9:50a
+JFSB 1081
+Note
+Env 28502
+Select
+Anne Ure
+SFL 222
+Section 004
+3/3 seats left
+3 CREDITS
+TTh
+12:15p - 4p
+JFSB 1100
+Note
+Anne Ure
+SFL 221
+Section 001
+3/3 seats left
+1 CREDIT
+F
+9a - 9:50a
+JFSB 1081
+Note
+Env 28503
+Select
+
+Learning communities envelope
+Jon Ostenson
+ENGL 230
+Section 001
+14/20 seats left
+3 CREDITS
+MW
+2p - 3:15p
+JFSB B150
+Note
+James LeCheminant
+UNIV 101
+Section 007
+14/20 seats left
+2 CREDITS
+MW
+11a - 11:50a
+HGB 180
+Note
+Heidi Smith
+REL A 275
+Section 029
+14/20 seats left
+2 CREDITS
+MW
+1p - 1:50p
+JFSB B092
+Env 28530
+Select
+Jon Ostenson
+ENGL 230
+Section 001
+14/20 seats left
+3 CREDITS
+MW
+2p - 3:15p
+JFSB B150
+Note
+Dawan Coombs
+UNIV 101
+Section 060
+14/20 seats left
+2 CREDITS
+MW
+11a - 11:50a
+MSRB 250
+Note
+Heidi Smith
+REL A 275
+Section 029
+14/20 seats left
+2 CREDITS
+MW
+1p - 1:50p
+JFSB B092
+Env 28531
+Select
+Keola Quereto
+WRTG 150
+Section 074
+17/20 seats left
+3 CREDITS
+MWF
+1p - 1:50p
+JFSB B160
+Marie Orton
+UNIV 101
+Section 016
+17/20 seats left
+2 CREDITS
+MW
+2p - 2:50p
+KMBL 245
+Note
+Ryan Sharp
+REL A 275
+Section 019
+17/20 seats left
+2 CREDITS
+TTh
+1p - 1:50p
+BNSN W111
+Env 28532
+Select
+TBD
+WRTG 150
+Section 075
+0/20 seats left
+3 CREDITS
+TTh
+12:30p - 1:45p
+JFSB B160
+Mike Goates
+UNIV 101
+Section 054
+0/20 seats left
+2 CREDITS
+MW
+11a - 11:50a
+HBLL 4722
+Note
+Brad Wilcox
+REL A 275
+Section 008
+0/20 seats left
+2 CREDITS
+MW
+10a - 10:50a
+JKB 1104
+Env 28533
+Select
+TBD
+WRTG 150
+Section 054
+15/20 seats left
+3 CREDITS
+TTh
+9:30a - 10:45a
+JKB 1121
+Jordan Watkins
+UNIV 101
+Section 004
+15/20 seats left
+2 CREDITS
+MW
+10a - 10:50a
+JSB 163
+Note
+Heidi Smith
+REL A 275
+Section 025
+15/20 seats left
+2 CREDITS
+MW
+11a - 11:50a
+JFSB B092
+Env 28534
+Select
+TBD
+WRTG 150
+Section 076
+19/20 seats left
+3 CREDITS
+MWF
+9a - 9:50a
+ESC C266
+Charles Graham
+UNIV 101
+Section 061
+19/20 seats left
+2 CREDITS
+TTh
+9a - 9:50a
+MCKB 185
+Note
+Heidi Smith
+REL A 275
+Section 025
+19/20 seats left
+2 CREDITS
+MW
+11a - 11:50a
+JFSB B092
+Env 28535
+Select
+Michael Ware
+PHY S 100
+Section 014
+20/24 seats left
+3 CREDITS
+MWF
+10a - 10:50a
+CB 377
+Th
+10a - 10:50a
+ESC N127
+Note
+Randy Lewis
+UNIV 101
+Section 014
+20/24 seats left
+2 CREDITS
+TTh
+9a - 9:50a
+JSB 163
+Note
+Heidi Smith
+REL A 275
+Section 025
+20/24 seats left
+2 CREDITS
+MW
+11a - 11:50a
+JFSB B092
+Env 28536
+Select
+Michael Ware
+PHY S 100
+Section 015
+21/24 seats left
+3 CREDITS
+MWF
+10a - 10:50a
+CB 377
+Th
+11a - 11:50a
+ESC N127
+Note
+Gaye Strathearn
+UNIV 101
+Section 028
+21/24 seats left
+2 CREDITS
+MW
+12p - 12:50p
+JSB 163
+Note
+Heidi Smith
+REL A 275
+Section 025
+21/24 seats left
+2 CREDITS
+MW
+11a - 11:50a
+JFSB B092
+Env 28537
+Select
+
+Math 213 & 215 Envelope
+Blake Barker
+MATH 213
+Section 007
+50/50 seats left
+2 CREDITS
+MW
+11a - 11:50a
+TMCB 135
+Note
+Blake Barker
+MATH 215
+Section 002
+50/50 seats left
+1 CREDIT
+F
+11a - 11:50a
+TMCB 135
+Note
+Env 28499
+Select

@@ -1,0 +1,603 @@
+{
+  "title": "Accountin jr core",
+  "display_title": "Accounting Junior Core",
+  "slug": "accountin-jr-core",
+  "term": "20271",
+  "captured_at": "2026-10-13",
+  "bundles": [
+    {
+      "env_id": "28524",
+      "capacity_snapshot": 65,
+      "seats_snapshot": 65,
+      "sections": [
+        {
+          "course_code": "ACC 405",
+          "section_number": "001",
+          "instructor_snapshot": "Hannah Judd",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1106"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1106"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 406",
+          "section_number": "001",
+          "instructor_snapshot": "Nicole Smith",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1106"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1106"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 407",
+          "section_number": "001",
+          "instructor_snapshot": "Scott Summers",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1106"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1106"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 504",
+          "section_number": "001",
+          "instructor_snapshot": "Brittley Eldredge",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1106"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1106"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28525",
+      "capacity_snapshot": 65,
+      "seats_snapshot": 65,
+      "sections": [
+        {
+          "course_code": "ACC 405",
+          "section_number": "002",
+          "instructor_snapshot": "Amanda Pope",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1124"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1124"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 406",
+          "section_number": "002",
+          "instructor_snapshot": "Nicole Smith",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1124"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1124"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 407",
+          "section_number": "002",
+          "instructor_snapshot": "Scott Summers",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1124"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1124"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 504",
+          "section_number": "002",
+          "instructor_snapshot": "Brittley Eldredge",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1124"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1124"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28526",
+      "capacity_snapshot": 55,
+      "seats_snapshot": 55,
+      "sections": [
+        {
+          "course_code": "ACC 405",
+          "section_number": "003",
+          "instructor_snapshot": "Amanda Pope",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1140"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1140"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 406",
+          "section_number": "003",
+          "instructor_snapshot": "Paul Schneider",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1140"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1140"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 407",
+          "section_number": "003",
+          "instructor_snapshot": "David Wood",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1140"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 480,
+              "end_min": 555,
+              "room": "TNRB 1140"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 504",
+          "section_number": "003",
+          "instructor_snapshot": "Chad Hugie",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1140"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 570,
+              "end_min": 645,
+              "room": "TNRB 1140"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28527",
+      "capacity_snapshot": 65,
+      "seats_snapshot": 65,
+      "sections": [
+        {
+          "course_code": "ACC 405",
+          "section_number": "004",
+          "instructor_snapshot": "Amanda Pope",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1106"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1106"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 406",
+          "section_number": "004",
+          "instructor_snapshot": "Brant Christensen",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1106"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1106"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 407",
+          "section_number": "004",
+          "instructor_snapshot": "Scott Summers",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1106"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1106"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 504",
+          "section_number": "004",
+          "instructor_snapshot": "Brittley Eldredge",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1106"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1106"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28528",
+      "capacity_snapshot": 65,
+      "seats_snapshot": 65,
+      "sections": [
+        {
+          "course_code": "ACC 405",
+          "section_number": "005",
+          "instructor_snapshot": "Hannah Judd",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1124"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1124"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 406",
+          "section_number": "005",
+          "instructor_snapshot": "Nicole Smith",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1124"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1124"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 407",
+          "section_number": "005",
+          "instructor_snapshot": "Scott Summers",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1124"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1124"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 504",
+          "section_number": "005",
+          "instructor_snapshot": "Brittley Eldredge",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1124"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1124"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "env_id": "28529",
+      "capacity_snapshot": 60,
+      "seats_snapshot": 60,
+      "sections": [
+        {
+          "course_code": "ACC 405",
+          "section_number": "006",
+          "instructor_snapshot": "Hannah Judd",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1140"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1140"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 406",
+          "section_number": "006",
+          "instructor_snapshot": "Paul Schneider",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Monday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1140"
+            },
+            {
+              "day": "Wednesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1140"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 407",
+          "section_number": "006",
+          "instructor_snapshot": "David Wood",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1140"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 840,
+              "end_min": 915,
+              "room": "TNRB 1140"
+            }
+          ]
+        },
+        {
+          "course_code": "ACC 504",
+          "section_number": "006",
+          "instructor_snapshot": "Chad Hugie",
+          "mode": null,
+          "credits": 3.0,
+          "part_of_term": null,
+          "note_flag": false,
+          "meetings": [
+            {
+              "day": "Tuesday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1140"
+            },
+            {
+              "day": "Thursday",
+              "start_min": 750,
+              "end_min": 825,
+              "room": "TNRB 1140"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

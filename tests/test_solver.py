@@ -1,6 +1,7 @@
 """Tests for the deterministic schedule solver (no network; temp SQLite DB)."""
 
 import asyncio
+import json
 import os
 import sys
 import time
@@ -9,7 +10,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend import database, solver  # noqa: E402
+from backend import database, envelopes, solver  # noqa: E402
 from backend.models import SolverRequest  # noqa: E402
 from backend.solver import (  # noqa: E402
     Meeting,
@@ -29,7 +30,8 @@ def M(day, start, end, building=None, room=None):
 
 
 def sec(sid, meetings=(), *, is_online=False, seats_open=10, instructor_id=None,
-        name=None, ease=50.0, conf=0.0, lacks=True, code="C", number="001", num=None):
+        name=None, ease=50.0, conf=0.0, lacks=True, code="C", number="001", num=None,
+        start_date=None, end_date=None):
     """Build a Section for pure-function tests.
 
     ``num`` is the stored RMP ``num_ratings`` (default ``None`` => no RMP data,
@@ -38,7 +40,8 @@ def sec(sid, meetings=(), *, is_online=False, seats_open=10, instructor_id=None,
     return Section(id=sid, course_code=code, section_number=number, is_online=is_online,
                    seats_open=seats_open, instructor_id=instructor_id, instructor_name=name,
                    ease_score=ease, ease_confidence=conf, lacks_ratings=lacks,
-                   meetings=tuple(meetings), title=None, num_ratings=num)
+                   meetings=tuple(meetings), title=None, num_ratings=num,
+                   start_date=start_date, end_date=end_date)
 
 
 # ── DB fixture & seeding helpers ─────────────────────────────────────────────
@@ -46,10 +49,13 @@ def sec(sid, meetings=(), *, is_online=False, seats_open=10, instructor_id=None,
 @pytest.fixture()
 def db(tmp_path):
     orig = database.DB
+    orig_env_dir = envelopes.ENVELOPES_DIR
     database.DB = str(tmp_path / "solver_test.db")
+    envelopes.ENVELOPES_DIR = tmp_path / "envelopes"
     asyncio.run(database.init_schedule_db())
     yield
     database.DB = orig
+    envelopes.ENVELOPES_DIR = orig_env_dir
 
 
 def add_prof(person_id, name, *, rating=None, diff=None, wta=None, num=None):
@@ -64,11 +70,12 @@ def add_prof(person_id, name, *, rating=None, diff=None, wta=None, num=None):
 
 
 def add_section(code, number, meetings=(), *, is_online=False, seats_open=10,
-                instructor_id=None, title=None):
+                instructor_id=None, title=None, start_date=None, end_date=None):
     async def run():
         sid = await database.upsert_section(
             TERM, code, number, title=title, is_online=is_online,
             seats_open=seats_open, instructor_id=instructor_id,
+            start_date=start_date, end_date=end_date,
         )
         await database.replace_section_meetings(
             sid, [(m.day, m.start_min, m.end_min, m.building, m.room) for m in meetings]
@@ -416,3 +423,185 @@ def test_scoring_fewer_days_rank1_prefers_fewer_campus_days():
         [sec(3, [M("Monday", 480, 540)]), sec(4, [M("Wednesday", 480, 540)])], prefs)
     assert compact[0] > spread[0]
     assert compact[1]["days_on_campus"] == 1 and spread[1]["days_on_campus"] == 2
+
+
+# ── Half-semester conflict rule ─────────────────────────────────────────────
+
+def test_half_semester_sections_do_not_conflict():
+    term1 = sec(1, [M("Tuesday", 570, 645)], code="MBA 570", number="001",
+                start_date="2027-01-06", end_date="2027-02-17")
+    term2 = sec(2, [M("Tuesday", 570, 645)], code="MBA 584", number="001",
+                start_date="2027-02-18", end_date="2027-04-07")
+    assert not sections_conflict(term1, term2)
+    assert not sections_conflict(term2, term1)
+
+
+def test_same_slot_full_term_still_conflicts():
+    full1 = sec(3, [M("Tuesday", 570, 645)])
+    full2 = sec(4, [M("Tuesday", 570, 645)])
+    assert sections_conflict(full1, full2)
+
+
+def test_solver_half_semester_sections_coexist(db):
+    add_section("MBA 570", "001", [M("Tuesday", 570, 645)],
+                start_date="2027-01-06", end_date="2027-02-17")
+    add_section("MBA 584", "001", [M("Tuesday", 570, 645)],
+                start_date="2027-02-18", end_date="2027-04-07")
+    res = solve(courses=["MBA 570", "MBA 584"])
+    assert len(res.schedules) == 1
+
+
+# ── Envelope solver integration ─────────────────────────────────────────────
+
+def _env_json(slug, bundles):
+    d = envelopes.json_dir_for_term(TERM)
+    d.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "title": slug.replace("-", " ").title(),
+        "display_title": slug.replace("-", " ").title(),
+        "slug": slug,
+        "term": TERM,
+        "captured_at": "2026-10-13",
+        "bundles": bundles,
+    }
+    (d / f"{slug}.json").write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _env_sec(course_code, number, meetings, instructor="Prof A"):
+    return {
+        "course_code": course_code, "section_number": number,
+        "instructor_snapshot": instructor, "mode": None, "credits": 3.0,
+        "part_of_term": None, "note_flag": False,
+        "meetings": [{"day": d, "start_min": s, "end_min": e, "room": r}
+                     for (d, s, e, r) in meetings],
+    }
+
+
+def _env_bundle(env_id, sections):
+    return {"env_id": env_id, "capacity_snapshot": 10, "seats_snapshot": 10,
+            "sections": sections}
+
+
+def _load_envelopes_ok(slug, bundles):
+    _env_json(slug, bundles)
+    asyncio.run(envelopes.load_envelopes(TERM))
+
+    async def mark_ok():
+        for env in await database.get_envelopes(TERM):
+            for b in env["bundles"]:
+                await database.update_bundle_ok(b["id"], 1)
+    asyncio.run(mark_ok())
+
+
+def test_envelope_atomicity(db):
+    add_section("EXDM 415", "001", [M("Monday", 480, 555)])
+    add_section("EXDM 416", "001", [M("Monday", 570, 645)])
+    add_section("EXDM 415", "002", [M("Monday", 840, 915)])
+    add_section("EXDM 416", "002", [M("Monday", 930, 1005)])
+    _load_envelopes_ok("exdm-core", [
+        _env_bundle("28001", [
+            _env_sec("EXDM 415", "001", [("Monday", 480, 555, "TNRB 1")]),
+            _env_sec("EXDM 416", "001", [("Monday", 570, 645, "TNRB 1")]),
+        ]),
+        _env_bundle("28002", [
+            _env_sec("EXDM 415", "002", [("Monday", 840, 915, "TNRB 2")]),
+            _env_sec("EXDM 416", "002", [("Monday", 930, 1005, "TNRB 2")]),
+        ]),
+    ])
+    res = solve(courses=["EXDM 415", "EXDM 416"], envelopes=["exdm-core"])
+    assert len(res.schedules) == 2
+    for sched in res.schedules:
+        assert len(sched.sections) == 2
+        # All sections come from exactly one bundle (shared env_id).
+        assert len({s.env_id for s in sched.sections}) == 1
+        assert all(s.via_envelope for s in sched.sections)
+    env_ids = {next(iter(sched.sections)).env_id for sched in res.schedules}
+    assert env_ids == {"28001", "28002"}
+
+
+def test_envelope_filter_drops_full_bundle(db):
+    add_section("IS 414", "001", [M("Monday", 480, 555)], seats_open=0)
+    add_section("IS 455", "001", [M("Monday", 570, 645)], seats_open=0)
+    add_section("IS 414", "002", [M("Monday", 840, 915)], seats_open=5)
+    add_section("IS 455", "002", [M("Monday", 930, 1005)], seats_open=5)
+    _load_envelopes_ok("is-core", [
+        _env_bundle("28010", [
+            _env_sec("IS 414", "001", [("Monday", 480, 555, "TNRB 1")]),
+            _env_sec("IS 455", "001", [("Monday", 570, 645, "TNRB 1")]),
+        ]),
+        _env_bundle("28011", [
+            _env_sec("IS 414", "002", [("Monday", 840, 915, "TNRB 2")]),
+            _env_sec("IS 455", "002", [("Monday", 930, 1005, "TNRB 2")]),
+        ]),
+    ])
+    res = solve(courses=["IS 414", "IS 455"], envelopes=["is-core"])
+    assert len(res.schedules) == 1
+    sched = res.schedules[0]
+    assert all(s.env_id == "28011" for s in sched.sections)
+
+
+def test_envelope_all_bundles_filtered_reports_filter(db):
+    add_section("IS 414", "001", [M("Monday", 480, 555)], seats_open=0)
+    add_section("IS 455", "001", [M("Monday", 570, 645)], seats_open=0)
+    _load_envelopes_ok("is-core", [
+        _env_bundle("28010", [
+            _env_sec("IS 414", "001", [("Monday", 480, 555, "TNRB 1")]),
+            _env_sec("IS 455", "001", [("Monday", 570, 645, "TNRB 1")]),
+        ]),
+    ])
+    res = solve(courses=["IS 414", "IS 455"], envelopes=["is-core"])
+    assert res.schedules == []
+    assert res.bottleneck is not None
+    assert res.bottleneck.envelope_problems
+    assert res.bottleneck.envelope_problems[0].slug == "is-core"
+    assert "full" in res.bottleneck.envelope_problems[0].removed_by
+
+
+def test_plain_course_satisfied_by_envelope(db):
+    add_section("STRAT 411", "001", [M("Monday", 480, 555)])
+    add_section("STRAT 412", "001", [M("Monday", 570, 645)])
+    add_section("STRAT 432", "001", [M("Monday", 660, 735)])
+    add_section("MKTG 201", "001", [M("Monday", 750, 825)])
+    _load_envelopes_ok("strat-core", [
+        _env_bundle("28020", [
+            _env_sec("STRAT 411", "001", [("Monday", 480, 555, "TNRB 1")]),
+            _env_sec("STRAT 412", "001", [("Monday", 570, 645, "TNRB 1")]),
+            _env_sec("STRAT 432", "001", [("Monday", 660, 735, "TNRB 1")]),
+        ]),
+    ])
+    res = solve(courses=["STRAT 411", "MKTG 201"], envelopes=["strat-core"])
+    assert len(res.schedules) == 1
+    sched = res.schedules[0]
+    codes = {s.course_code for s in sched.sections}
+    assert codes == {"STRAT 411", "STRAT 412", "STRAT 432", "MKTG 201"}
+    strat = [s for s in sched.sections if s.course_code.startswith("STRAT")]
+    assert all(s.via_envelope for s in strat)
+    assert all(s.env_id == "28020" for s in strat)
+    plain = next(s for s in sched.sections if s.course_code == "MKTG 201")
+    assert plain.via_envelope is None
+    assert plain.env_id is None
+
+
+def test_shared_sections_across_envelopes(db):
+    add_section("STRAT 411", "001", [M("Monday", 480, 555)])
+    add_section("STRAT 412", "001", [M("Monday", 570, 645)])
+    add_section("STRAT 432", "001", [M("Monday", 660, 735)])
+    _load_envelopes_ok("core-a", [
+        _env_bundle("28030", [
+            _env_sec("STRAT 411", "001", [("Monday", 480, 555, "TNRB 1")]),
+            _env_sec("STRAT 412", "001", [("Monday", 570, 645, "TNRB 1")]),
+        ]),
+    ])
+    _load_envelopes_ok("core-b", [
+        _env_bundle("28031", [
+            _env_sec("STRAT 412", "001", [("Monday", 570, 645, "TNRB 1")]),
+            _env_sec("STRAT 432", "001", [("Monday", 660, 735, "TNRB 1")]),
+        ]),
+    ])
+    res = solve(courses=["STRAT 411", "STRAT 432"], envelopes=["core-a", "core-b"])
+    assert len(res.schedules) == 1
+    sched = res.schedules[0]
+    codes = [s.course_code for s in sched.sections]
+    assert codes == ["STRAT 411", "STRAT 412", "STRAT 432"]
+    # The shared section appears once.
+    assert len(sched.sections) == 3
