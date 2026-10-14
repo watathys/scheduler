@@ -45,6 +45,7 @@ const state = {
   envelopes: [],          // [{slug, title, courses, ok_bundles}]
   preferences: DEFAULT_PREFS.slice(),  // rank 1..3
   daysOff: ["Friday"],
+  possibleDaysOff: WEEKDAYS.slice(),  // weekdays that can actually be taken off
   earliestStart: "08:00",
   latestEnd: "22:00",
   allowOnline: false,
@@ -188,6 +189,7 @@ let debounceTimer = null;
 let currentSuggestions = [];
 let activeSuggestion = -1;
 let searchSeq = 0;
+let daysOffSeq = 0;
 
 courseInput.addEventListener("input", onCourseInput);
 courseInput.addEventListener("keydown", onCourseKeydown);
@@ -301,11 +303,13 @@ function addCourse(item) {
   clearSuggestions();
   courseInput.value = "";
   courseInput.focus();
+  refreshDaysOff();
 }
 
 function removeCourse(index) {
   state.courses.splice(index, 1);
   renderChips();
+  refreshDaysOff();
 }
 
 function renderChips() {
@@ -339,6 +343,8 @@ function validateCourses() {
 // ── Step 1: envelopes ────────────────────────────────────────────────────────
 const envelopeInput = $id("envelope-input");
 const envelopeSuggestionsBox = $id("envelope-suggestions");
+const envelopeToggle = $id("envelope-toggle");
+const envelopePanel = $id("envelope-panel");
 let allEnvelopes = [];         // fetched once from /envelopes
 let activeEnvelopeSuggestion = -1;
 let envelopeLoaded = false;
@@ -348,6 +354,19 @@ envelopeInput.addEventListener("keydown", onEnvelopeKeydown);
 envelopeInput.addEventListener("blur", () => {
   setTimeout(() => { if (document.activeElement !== envelopeSuggestionsBox) clearEnvelopeSuggestions(); }, 150);
 });
+
+function setEnvelopePickerOpen(open) {
+  envelopeToggle.setAttribute("aria-expanded", String(open));
+  envelopePanel.hidden = !open;
+  if (open) {
+    loadEnvelopes();
+    envelopeInput.focus();
+  } else {
+    clearEnvelopeSuggestions();
+  }
+}
+
+envelopeToggle.addEventListener("click", () => setEnvelopePickerOpen(envelopePanel.hidden));
 
 async function loadEnvelopes() {
   if (envelopeLoaded) return;
@@ -581,12 +600,21 @@ function renderDaysOff() {
   wrap.hidden = false;
   const opts = $id("weekday-options");
   opts.innerHTML = "";
+  const possible = new Set(state.possibleDaysOff);
+  // Drop any previously-selected day that is no longer possible to take off.
+  state.daysOff = state.daysOff.filter((d) => possible.has(d));
   WEEKDAYS.forEach((day) => {
+    const available = possible.has(day);
     const label = el("label");
+    if (!available) {
+      label.classList.add("is-disabled");
+      label.title = `${day} can't be taken off with these courses.`;
+    }
     const cb = document.createElement("input");
     cb.type = "checkbox";
     cb.value = day;
-    cb.checked = state.daysOff.includes(day);
+    cb.disabled = !available;
+    cb.checked = available && state.daysOff.includes(day);
     cb.addEventListener("change", () => {
       if (cb.checked) {
         if (!state.daysOff.includes(day)) state.daysOff.push(day);
@@ -598,6 +626,37 @@ function renderDaysOff() {
     label.appendChild(document.createTextNode(day));
     opts.appendChild(label);
   });
+}
+
+async function refreshDaysOff() {
+  const codes = state.courses.map((c) => c.code);
+  const seq = ++daysOffSeq;
+  if (codes.length === 0) {
+    state.possibleDaysOff = WEEKDAYS.slice();
+    renderDaysOff();
+    return;
+  }
+  const params = new URLSearchParams();
+  codes.forEach((c) => params.append("courses", c));
+  try {
+    const res = await fetch(`/api/v1/scheduler/courses/days-off?${params.toString()}`);
+    if (seq !== daysOffSeq) return;
+    if (!res.ok) {
+      state.possibleDaysOff = WEEKDAYS.slice();
+      renderDaysOff();
+      return;
+    }
+    const data = await res.json();
+    const possible = Array.isArray(data.possible_days_off)
+      ? data.possible_days_off.filter((d) => WEEKDAYS.includes(d))
+      : WEEKDAYS.slice();
+    state.possibleDaysOff = possible.length ? possible : WEEKDAYS.slice();
+    renderDaysOff();
+  } catch (e) {
+    if (seq !== daysOffSeq) return;
+    state.possibleDaysOff = WEEKDAYS.slice();
+    renderDaysOff();
+  }
 }
 
 // ── Step 3: questions ────────────────────────────────────────────────────────
@@ -773,6 +832,7 @@ async function swapCourse(oldCode, newCode) {
   hideFormError();
   showStep(0);
   renderChips();
+  refreshDaysOff();
   announce(`Swapped in ${newCode}. Review your courses and resubmit.`);
 }
 
@@ -1283,6 +1343,8 @@ function restart() {
   state.envelopes = [];
   state.preferences = DEFAULT_PREFS.slice();
   state.daysOff = ["Friday"];
+  state.possibleDaysOff = WEEKDAYS.slice();
+  daysOffSeq++;  // invalidate any in-flight days-off lookup
   state.earliestStart = "08:00";
   state.latestEnd = "22:00";
   state.allowOnline = false;
@@ -1294,6 +1356,7 @@ function restart() {
   $id("course-input").value = "";
   $id("envelope-input").value = "";
   $id("extra-text").value = "";
+  setEnvelopePickerOpen(false);
   renderChips();
   renderEnvelopeChips();
   showView("stepper");

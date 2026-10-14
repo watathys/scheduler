@@ -20,6 +20,7 @@ from .config import settings
 from .matching import collapse, normalize_course_code
 from .models import (
     CourseSearchResult,
+    DaysOffOut,
     EnvelopeOut,
     GenerateRequest,
     GenerateResponse,
@@ -150,6 +151,29 @@ async def search_courses(
     term = await get_active_term()
     courses = await _load_courses(term)
     return _rank_courses(text, courses, limit)
+
+
+@router.get("/courses/days-off", response_model=DaysOffOut)
+async def courses_days_off(
+    courses: list[str] = Query(default=[], description="Course codes (repeat the param for each)"),
+):
+    """Weekdays it is actually possible to take off for the given courses.
+
+    Powers Step 2's "Days you want off": only days where a schedule can still
+    be built with no classes are returned; every other weekday is unavailable.
+    """
+    if not courses:
+        return DaysOffOut(possible_days_off=list(solver.OFF_DAY_ORDER))
+    term = await get_active_term()
+    try:
+        possible = await solver.possible_days_off(term, courses)
+    except solver.SolverError as e:
+        raise HTTPException(status_code=422, detail={
+            "message": str(e),
+            "course": e.course,
+            "suggestions": e.suggestions,
+        })
+    return DaysOffOut(possible_days_off=possible)
 
 
 # ── Schedule generation ──────────────────────────────────────────────────────

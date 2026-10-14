@@ -138,6 +138,52 @@ def test_autocomplete_short_query_empty(client):
     assert r.json() == []
 
 
+# ── Days-off feasibility ─────────────────────────────────────────────────────
+
+def test_days_off_single_day_course(client):
+    # Marketing meets Mon/Wed only -> Mon & Wed are impossible to take off.
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540), M("Wednesday", 480, 540)])
+    r = client.get("/api/v1/scheduler/courses/days-off",
+                   params=[("courses", "MKTG 201")])
+    assert r.status_code == 200
+    assert r.json()["possible_days_off"] == ["Tuesday", "Thursday", "Friday"]
+
+
+def test_days_off_unavailable_days_union_across_courses(client):
+    # Marketing is Mon/Wed only; Strategy is Thursday only.
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540), M("Wednesday", 480, 540)])
+    _seed_section("STRAT 305", "001", [M("Thursday", 600, 660)])
+    r = client.get("/api/v1/scheduler/courses/days-off",
+                   params=[("courses", "MKTG 201"), ("courses", "STRAT 305")])
+    assert r.status_code == 200
+    assert r.json()["possible_days_off"] == ["Tuesday", "Friday"]
+
+
+def test_days_off_day_available_when_any_section_avoids_it(client):
+    # Two sections: one Mon, one Wed. Every weekday is avoidable.
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)])
+    _seed_section("MKTG 201", "002", [M("Wednesday", 480, 540)])
+    r = client.get("/api/v1/scheduler/courses/days-off",
+                   params=[("courses", "MKTG 201")])
+    assert r.status_code == 200
+    assert r.json()["possible_days_off"] == ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+
+
+def test_days_off_async_online_section_avoids_all_days(client):
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)])
+    _seed_section("MKTG 201", "900", [], is_online=True)  # async, no meetings
+    r = client.get("/api/v1/scheduler/courses/days-off",
+                   params=[("courses", "MKTG 201")])
+    assert r.status_code == 200
+    assert r.json()["possible_days_off"] == ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+
+
+def test_days_off_empty_returns_all_weekdays(client):
+    r = client.get("/api/v1/scheduler/courses/days-off")
+    assert r.status_code == 200
+    assert r.json()["possible_days_off"] == ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+
+
 # ── Generate: happy path ─────────────────────────────────────────────────────
 
 def test_generate_happy_path(client):

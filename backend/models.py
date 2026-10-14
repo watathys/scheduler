@@ -238,6 +238,11 @@ class CourseSearchResult(BaseModel):
     section_count: int
 
 
+class DaysOffOut(BaseModel):
+    """Weekdays it is actually possible to take off for a set of courses."""
+    possible_days_off: list[str]
+
+
 class GeneratedSchedule(ScheduleOut):
     explanation: str = ""
 

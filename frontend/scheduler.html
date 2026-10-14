@@ -47,17 +47,21 @@
       <p class="step-hint count-hint" id="course-count" aria-live="polite">0 of 8 courses added</p>
 
       <div class="envelope-picker">
-        <div class="envelope-picker-head">
-          <span class="field-label" id="envelope-label">Taking a pre-bundled core? Add an envelope</span>
-          <span class="step-hint envelope-hint">Optional — pick one if your program uses the Registration Cart's "Choose an envelope".</span>
-        </div>
-        <div class="autocomplete">
-          <label class="sr-only" for="envelope-input">Search for an envelope</label>
-          <input id="envelope-input" type="text" autocomplete="off" spellcheck="false"
-                 placeholder="Search envelopes… e.g. Strat junior core"
-                 role="combobox" aria-autocomplete="list" aria-expanded="false"
-                 aria-controls="envelope-suggestions" aria-activedescendant="">
-          <ul id="envelope-suggestions" class="suggestions" role="listbox" hidden></ul>
+        <button type="button" class="envelope-toggle" id="envelope-toggle"
+                aria-expanded="false" aria-controls="envelope-panel">
+          <span class="field-label" id="envelope-label">Add an envelope</span>
+          <span class="envelope-toggle-caret" aria-hidden="true">▾</span>
+        </button>
+        <div class="envelope-panel" id="envelope-panel" hidden>
+          <p class="step-hint envelope-hint">Optional — pick one if your program uses the Registration Cart's "Choose an envelope".</p>
+          <div class="autocomplete">
+            <label class="sr-only" for="envelope-input">Search for an envelope</label>
+            <input id="envelope-input" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="Search envelopes… e.g. Strat junior core"
+                   role="combobox" aria-autocomplete="list" aria-expanded="false"
+                   aria-controls="envelope-suggestions" aria-activedescendant="">
+            <ul id="envelope-suggestions" class="suggestions" role="listbox" hidden></ul>
+          </div>
         </div>
         <div class="chips" id="envelope-chips" aria-label="Selected envelopes"></div>
       </div>
@@ -73,7 +77,7 @@
       <div class="days-off" id="days-off-wrap">
         <fieldset>
           <legend>Days you want off</legend>
-          <p class="field-help">Schedules will never include classes on these days.</p>
+          <p class="field-help">Here are the days you can get off based on your schedule.</p>
           <div class="weekday-options" id="weekday-options"></div>
         </fieldset>
       </div>

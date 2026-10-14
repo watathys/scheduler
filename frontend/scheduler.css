@@ -230,6 +230,9 @@ textarea { resize: vertical; }
 .weekday-options label:has(input:checked) {
   background: var(--accent-soft); border-color: var(--accent); color: var(--accent);
 }
+.weekday-options label.is-disabled {
+  opacity: .45; cursor: not-allowed; color: var(--muted);
+}
 .weekday-options input { accent-color: var(--accent); }
 
 /* ── Cards ─────────────────────────────────────── */
@@ -414,8 +417,19 @@ textarea { resize: vertical; }
 .envelope-picker {
   margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);
 }
-.envelope-picker-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
-.envelope-hint { margin: 0; }
+.envelope-toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; padding: 0; margin-bottom: 10px;
+  background: none; border: 0; color: var(--text); text-align: left; cursor: pointer;
+}
+.envelope-toggle .field-label { margin: 0; }
+.envelope-toggle-caret {
+  color: var(--accent); font-size: var(--fs-s); transition: transform .15s ease;
+}
+.envelope-toggle[aria-expanded="true"] .envelope-toggle-caret { transform: rotate(180deg); }
+.envelope-panel { margin-bottom: 10px; }
+.envelope-panel[hidden] { display: none; }
+.envelope-hint { margin: 0 0 10px; }
 
 .envelope-chip {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px;

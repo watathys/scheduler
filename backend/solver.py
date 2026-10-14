@@ -52,6 +52,9 @@ RELAXATION_LABELS = [
     "skip full sections",
 ]
 
+# Weekdays (in display order) that a student might want off.
+OFF_DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+
 
 class SolverError(Exception):
     """Raised when the request itself cannot be satisfied (bad course, etc.)."""
@@ -276,6 +279,31 @@ async def load_sections(term: str, course_codes: list[str]) -> dict[str, list[Se
         )
         out.setdefault(r["course_code"], []).append(section)
     return out
+
+
+async def possible_days_off(term: str, raw_codes: list[str]) -> list[str]:
+    """Weekdays that can actually be taken off for the given courses.
+
+    A day is *unavailable* (impossible to take off) when some course meets on
+    it in every one of its sections — i.e. no section of that course avoids
+    that day. Async/online sections have no meetings, so they avoid every day
+    and never make a day unavailable. Returns the Mon–Fri subset (in order)
+    that remains available.
+    """
+    codes = await _resolve_courses(term, raw_codes)
+    loaded = await load_sections(term, codes)
+    unavailable: set[str] = set()
+    for code in codes:
+        sections = loaded.get(code, [])
+        common: set[str] | None = None
+        for s in sections:
+            days = {m.day for m in s.meetings}
+            common = days if common is None else (common & days)
+            if not common:
+                break
+        if common:
+            unavailable |= common
+    return [d for d in OFF_DAY_ORDER if d not in unavailable]
 
 
 async def load_sections_by_ids(term: str, section_ids: list[int]) -> dict[int, Section]:
