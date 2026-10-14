@@ -44,12 +44,17 @@ GAP_OVER_LIMIT_MIN = 180               # gaps longer than this are penalized har
 NO_GAPS_NORMALIZER_MIN = 720           # effective-gap minutes that map to a 0 score
 _NO_BOUND = 10 ** 9                    # "no earliest/latest bound" sentinel
 
-FILTER_NAMES = ("instructor", "online", "days_off", "full", "earliest_latest", "blocked_times")
+# BYU building code for the Salt Lake Center. A section with any meeting here
+# is treated as a "Salt Lake" class (excluded unless the student allows it).
+SLC_BUILDING = "SLC"
+
+FILTER_NAMES = ("instructor", "online", "salt_lake", "days_off", "full", "earliest_latest", "blocked_times")
 RELAXATION_LABELS = [
     "earliest/latest window",
     "blocked times",
     "online allowed",
     "skip full sections",
+    "salt lake allowed",
 ]
 
 # Weekdays (in display order) that a student might want off.
@@ -90,6 +95,8 @@ class Section:
     ease_confidence: float
     lacks_ratings: bool
     meetings: tuple[Meeting, ...] = ()
+    # True when any meeting is at the Salt Lake Center (building == "SLC").
+    is_salt_lake: bool = False
     title: Optional[str] = None
     rmp_id: Optional[str] = None
     rmp_name: Optional[str] = None
@@ -255,6 +262,7 @@ async def load_sections(term: str, course_codes: list[str]) -> dict[str, list[Se
             ease, conf = rmp.ease_score(prof)
             lacks = (prof["num_ratings"] or 0) < 3
 
+        meetings = tuple(meetings_by_section.get(r["id"], []))
         section = Section(
             id=r["id"],
             course_code=r["course_code"],
@@ -266,7 +274,8 @@ async def load_sections(term: str, course_codes: list[str]) -> dict[str, list[Se
             ease_score=ease,
             ease_confidence=conf,
             lacks_ratings=lacks,
-            meetings=tuple(meetings_by_section.get(r["id"], [])),
+            meetings=meetings,
+            is_salt_lake=any(m.building == SLC_BUILDING for m in meetings),
             title=r["title"],
             rmp_id=r["rmp_id"],
             rmp_name=r["rmp_name"],
@@ -368,6 +377,7 @@ async def load_sections_by_ids(term: str, section_ids: list[int]) -> dict[int, S
             ease, conf = rmp.ease_score(prof)
             lacks = (prof["num_ratings"] or 0) < 3
 
+        meetings = tuple(meetings_by_section.get(r["id"], []))
         out[r["id"]] = Section(
             id=r["id"],
             course_code=r["course_code"],
@@ -379,7 +389,8 @@ async def load_sections_by_ids(term: str, section_ids: list[int]) -> dict[int, S
             ease_score=ease,
             ease_confidence=conf,
             lacks_ratings=lacks,
-            meetings=tuple(meetings_by_section.get(r["id"], [])),
+            meetings=meetings,
+            is_salt_lake=any(m.building == SLC_BUILDING for m in meetings),
             title=r["title"],
             rmp_id=r["rmp_id"],
             rmp_name=r["rmp_name"],
@@ -420,6 +431,7 @@ def apply_hard_filters(
     sections: list[Section],
     *,
     allow_online: bool,
+    allow_salt_lake: bool = True,
     skip_full_sections: bool,
     earliest_start_min: int,
     latest_end_min: int,
@@ -431,9 +443,11 @@ def apply_hard_filters(
 
     ``days_off`` is a hard constraint: any section with a meeting on a requested
     off-day is removed. ``instructors`` is a hard constraint too: when set, only
-    sections matching one of the selected instructor keys are kept. Returns
-    (kept_sections, removed_count_by_filter). Async sections (no meetings) never
-    violate the time/blocked/days-off filters.
+    sections matching one of the selected instructor keys are kept. When
+    ``allow_salt_lake`` is False, any section with a meeting at the Salt Lake
+    Center is removed. Returns (kept_sections, removed_count_by_filter). Async
+    sections (no meetings) never violate the time/blocked/days-off/salt-lake
+    filters.
     """
     off_days = {_norm_day(d) for d in (days_off or [])}
     allowed = set(instructors or [])
@@ -445,6 +459,9 @@ def apply_hard_filters(
             continue
         if s.is_online and not allow_online:
             removed["online"] += 1
+            continue
+        if s.is_salt_lake and not allow_salt_lake:
+            removed["salt_lake"] += 1
             continue
         if off_days and any(m.day in off_days for m in s.meetings):
             removed["days_off"] += 1
@@ -761,6 +778,7 @@ def _apply(req: SolverRequest, sections: list[Section],
     return apply_hard_filters(
         sections,
         allow_online=req.allow_online,
+        allow_salt_lake=req.allow_salt_lake,
         skip_full_sections=req.skip_full_sections,
         earliest_start_min=req.earliest_start_min,
         latest_end_min=req.latest_end_min,
@@ -779,6 +797,8 @@ def _relaxed_request(req: SolverRequest, label: str) -> SolverRequest:
         return req.model_copy(update={"allow_online": True})
     if label == "skip full sections":
         return req.model_copy(update={"skip_full_sections": False})
+    if label == "salt lake allowed":
+        return req.model_copy(update={"allow_salt_lake": True})
     raise ValueError(f"unknown relaxation: {label}")
 
 
@@ -849,6 +869,8 @@ def diagnose_bottleneck(
     for r in no_sections:
         if set(r.removed_by) == {"online"} and not req.allow_online:
             msgs.append(f"{r.course} is online-only but online sections are not allowed")
+        elif set(r.removed_by) == {"salt_lake"} and not req.allow_salt_lake:
+            msgs.append(f"{r.course} only has Salt Lake Center sections but Salt Lake classes are not allowed")
         elif "days_off" in r.removed_by and req.days_off:
             days = ", ".join(req.days_off)
             msgs.append(f"{r.course} has no sections that avoid {days} (a day you want off)")
@@ -964,6 +986,7 @@ def _apply_bundle(bundle: Bundle, req: SolverRequest,
     kept, removed = apply_hard_filters(
         list(bundle.sections),
         allow_online=req.allow_online,
+        allow_salt_lake=req.allow_salt_lake,
         skip_full_sections=req.skip_full_sections,
         earliest_start_min=req.earliest_start_min,
         latest_end_min=req.latest_end_min,

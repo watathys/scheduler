@@ -35,6 +35,8 @@ class SolverRequest(BaseModel):
     earliest_start_min: int = 0
     latest_end_min: int = 1440
     allow_online: bool = False
+    # When False (default), Salt Lake Center sections are filtered out.
+    allow_salt_lake: bool = False
     blocked_times: list[BlockedTime] = Field(default_factory=list)
     skip_full_sections: bool = True
     envelopes: list[str] = Field(default_factory=list)
@@ -198,6 +200,8 @@ class GenerateRequest(BaseModel):
     earliest_start: str = "08:00"
     latest_end: str = "22:00"
     allow_online: bool = False
+    # When False (default), Salt Lake Center sections are filtered out.
+    allow_salt_lake: bool = False
     extra_constraints_text: Optional[str] = Field(default=None, max_length=500)
     envelopes: list[str] = Field(default_factory=list, max_length=8)
     # Course -> allowed instructor keys ("<professor id>", "online", or

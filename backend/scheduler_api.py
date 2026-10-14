@@ -273,6 +273,7 @@ async def generate_schedules(request: Request, body: GenerateRequest):
         earliest_start_min=body.earliest_start_min,
         latest_end_min=body.latest_end_min,
         allow_online=body.allow_online,
+        allow_salt_lake=body.allow_salt_lake,
         blocked_times=parsed.blocked_times,
         envelopes=body.envelopes,
         instructors=instructors,

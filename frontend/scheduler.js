@@ -49,6 +49,7 @@ const state = {
   earliestStart: "08:00",
   latestEnd: "22:00",
   allowOnline: false,
+  allowSaltLake: false,
   extraText: "",
   result: null,           // last GenerateResponse (status "ok")
   noSchedule: null,       // last no_schedule response
@@ -749,6 +750,7 @@ function renderQuestions() {
   $id("earliest-start").value = state.earliestStart;
   $id("latest-end").value = state.latestEnd;
   $id("allow-online").checked = state.allowOnline;
+  $id("allow-salt-lake").checked = state.allowSaltLake;
   $id("extra-text").value = state.extraText;
 }
 
@@ -766,6 +768,7 @@ function captureQuestions() {
   state.earliestStart = $id("earliest-start").value;
   state.latestEnd = $id("latest-end").value;
   state.allowOnline = $id("allow-online").checked;
+  state.allowSaltLake = $id("allow-salt-lake").checked;
   state.extraText = $id("extra-text").value;
 }
 
@@ -788,6 +791,7 @@ function buildPayload() {
     earliest_start: state.earliestStart,
     latest_end: state.latestEnd,
     allow_online: state.allowOnline,
+    allow_salt_lake: state.allowSaltLake,
   };
   const instructors = {};
   state.courses.forEach((c) => {
@@ -1471,10 +1475,13 @@ function renderNoSchedule(data) {
       why = `every section meets on ${days}, which you wanted off`;
     } else if (Object.keys(removed).length === 1 && removed.online && !state.allowOnline) {
       why = "it only has online sections and you said no online classes";
+    } else if (Object.keys(removed).length === 1 && removed.salt_lake && !state.allowSaltLake) {
+      why = "its sections are at the Salt Lake Center and you said no Salt Lake classes";
     } else {
       const reasons = [];
       if (removed.instructor) reasons.push("no section has the instructor you selected");
       if (removed.online) reasons.push("online-only");
+      if (removed.salt_lake) reasons.push("only at the Salt Lake Center");
       if (removed.full) reasons.push("all full");
       if (removed.earliest_latest) reasons.push("outside your time window");
       if (removed.blocked_times) reasons.push("conflicts with your blocked times");
@@ -1513,6 +1520,7 @@ function relaxationText(label) {
     "blocked times": "Remove or relax a blocked time from your free-text notes",
     "online allowed": "Allow online classes",
     "skip full sections": "Allow sections that are currently full",
+    "salt lake allowed": "Allow Salt Lake classes",
   };
   return map[label] || label;
 }
@@ -1528,6 +1536,7 @@ function restart() {
   state.earliestStart = "08:00";
   state.latestEnd = "22:00";
   state.allowOnline = false;
+  state.allowSaltLake = false;
   state.extraText = "";
   state.result = null;
   state.noSchedule = null;
@@ -1559,6 +1568,7 @@ function init() {
   $id("earliest-start").addEventListener("change", (e) => { state.earliestStart = e.target.value; });
   $id("latest-end").addEventListener("change", (e) => { state.latestEnd = e.target.value; });
   $id("allow-online").addEventListener("change", (e) => { state.allowOnline = e.target.checked; });
+  $id("allow-salt-lake").addEventListener("change", (e) => { state.allowSaltLake = e.target.checked; });
   $id("extra-text").addEventListener("input", (e) => { state.extraText = e.target.value; });
 
   document.querySelectorAll(".step-dot").forEach((dot) => {

@@ -31,7 +31,7 @@ def M(day, start, end, building=None, room=None):
 
 def sec(sid, meetings=(), *, is_online=False, seats_open=10, instructor_id=None,
         name=None, ease=50.0, conf=0.0, lacks=True, code="C", number="001", num=None,
-        start_date=None, end_date=None):
+        start_date=None, end_date=None, is_salt_lake=False):
     """Build a Section for pure-function tests.
 
     ``num`` is the stored RMP ``num_ratings`` (default ``None`` => no RMP data,
@@ -41,7 +41,7 @@ def sec(sid, meetings=(), *, is_online=False, seats_open=10, instructor_id=None,
                    seats_open=seats_open, instructor_id=instructor_id, instructor_name=name,
                    ease_score=ease, ease_confidence=conf, lacks_ratings=lacks,
                    meetings=tuple(meetings), title=None, num_ratings=num,
-                   start_date=start_date, end_date=end_date)
+                   start_date=start_date, end_date=end_date, is_salt_lake=is_salt_lake)
 
 
 # ── DB fixture & seeding helpers ─────────────────────────────────────────────
@@ -184,6 +184,25 @@ def test_filter_full_sections():
         earliest_start_min=0, latest_end_min=1440, blocked_times=[],
     )
     assert len(kept2) == 3  # full section retained when skip is off
+
+
+def test_filter_salt_lake_when_disallowed():
+    sections = [
+        sec(1, [M("Monday", 480, 540, "SLC", "101")], is_salt_lake=True),
+        sec(2, [M("Monday", 600, 660, "TNRB", "101")]),
+    ]
+    kept, removed = apply_hard_filters(
+        sections, allow_online=True, allow_salt_lake=False, skip_full_sections=True,
+        earliest_start_min=0, latest_end_min=1440, blocked_times=[],
+    )
+    assert [s.id for s in kept] == [2]
+    assert removed["salt_lake"] == 1
+
+    kept2, _ = apply_hard_filters(
+        sections, allow_online=True, allow_salt_lake=True, skip_full_sections=True,
+        earliest_start_min=0, latest_end_min=1440, blocked_times=[],
+    )
+    assert len(kept2) == 2
 
 
 # ── Scoring order per preference rank ────────────────────────────────────────
@@ -416,6 +435,24 @@ def test_online_only_course_reported_as_bottleneck(db):
     assert res.bottleneck.no_sections[0].course == "MKTG 201"
     assert "online" in res.bottleneck.no_sections[0].removed_by
     assert "online allowed" in res.bottleneck.feasible_relaxations
+
+
+def test_salt_lake_section_filtered_by_default(db):
+    add_section("MKTG 201", "001", [M("Monday", 480, 540, "SLC", "101")])
+    res = solve(courses=["MKTG 201"])  # allow_salt_lake defaults to False
+    assert res.schedules == []
+    assert res.bottleneck is not None
+    report = res.bottleneck.no_sections[0]
+    assert report.course == "MKTG 201"
+    assert "salt_lake" in report.removed_by
+    assert "salt lake allowed" in res.bottleneck.feasible_relaxations
+
+
+def test_salt_lake_section_allowed_when_requested(db):
+    add_section("MKTG 201", "001", [M("Monday", 480, 540, "SLC", "101")])
+    res = solve(courses=["MKTG 201"], allow_salt_lake=True)
+    assert len(res.schedules) == 1
+    assert res.schedules[0].sections[0].course_code == "MKTG 201"
 
 
 # ── Bottleneck diagnosis ─────────────────────────────────────────────────────
