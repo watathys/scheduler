@@ -54,6 +54,8 @@ const state = {
   noSchedule: null,       // last no_schedule response
   selectedOption: 0,
   submitting: false,
+  shownScheduleIds: [],   // section-id sets already shown (for "generate more")
+  hasMore: false,         // whether more distinct schedules remain
 };
 
 // ── DOM helpers ───────────────────────────────────────────────────────────────
@@ -66,6 +68,26 @@ function el(tag, className, text) {
 
 function normCode(raw) {
   return String(raw || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+}
+
+// Title-case an instructor's display name. BYU returns names already lowercased
+// ("seth mccombie"), so this mirrors backend/matching.py ``title_case_name``:
+// each whitespace-, hyphen-, or apostrophe-separated part is capitalized, with
+// a small Mc/Mac surname fix-up ("mccombie" -> "McCombie").
+function titleCaseName(raw) {
+  if (!raw) return "";
+  const titleWord = (word) => {
+    if (!word) return word;
+    const w = word.toLowerCase();
+    if (w.startsWith("mc") && w.length > 2) return "Mc" + w.charAt(2).toUpperCase() + w.slice(3);
+    if (w.startsWith("mac") && w.length > 4) return "Mac" + w.charAt(3).toUpperCase() + w.slice(4);
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  };
+  return String(raw).trim().split(/\s+/).map((token) =>
+    token.split(/([-'])/).map((part) =>
+      (part === "-" || part === "'") ? part : titleWord(part)
+    ).join("")
+  ).join(" ");
 }
 
 function announce(msg) {
@@ -712,12 +734,7 @@ function totalCredits() {
 }
 
 // ── Submit ────────────────────────────────────────────────────────────────────
-async function submit() {
-  if (state.submitting) return;
-  captureQuestions();
-  state.submitting = true;
-  setSubmitLoading(true);
-
+function buildPayload() {
   const payload = {
     courses: state.courses.map((c) => c.code),
     preferences: state.preferences,
@@ -728,6 +745,16 @@ async function submit() {
   };
   if (state.envelopes.length) payload.envelopes = state.envelopes.map((e) => e.slug);
   if (state.extraText.trim()) payload.extra_constraints_text = state.extraText.trim();
+  return payload;
+}
+
+async function submit() {
+  if (state.submitting) return;
+  captureQuestions();
+  state.submitting = true;
+  setSubmitLoading(true);
+
+  const payload = buildPayload();
 
   try {
     const res = await fetch("/api/v1/scheduler/schedules/generate", {
@@ -762,6 +789,8 @@ async function submit() {
     } else {
       state.result = data;
       state.selectedOption = 0;
+      state.shownScheduleIds = (data.schedules || []).map(scheduleSectionIds);
+      state.hasMore = !!data.has_more;
       renderResults(data);
     }
   } catch (e) {
@@ -872,7 +901,87 @@ function renderResults(data) {
     panels.appendChild(panel);
   });
 
+  updateMoreButton();
   showView("results");
+}
+
+// ── Generate more schedules ───────────────────────────────────────────────────
+function scheduleSectionIds(sched) {
+  const ids = [];
+  [...(sched.sections || []), ...(sched.async_online || [])].forEach((s) => {
+    if (s.id !== null && s.id !== undefined) ids.push(s.id);
+  });
+  return ids.sort((a, b) => a - b);
+}
+
+function updateMoreButton() {
+  const btn = $id("btn-more");
+  if (!btn) return;
+  btn.hidden = !state.hasMore;
+}
+
+function setMoreLoading(loading) {
+  const btn = $id("btn-more");
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading ? "Generating…" : "Generate 3 more schedules";
+}
+
+function showMoreMessage(kind, text) {
+  const wrap = $id("results-notices");
+  if (!wrap) return;
+  const n = el("div", "notice notice-" + kind);
+  n.textContent = text;
+  wrap.appendChild(n);
+}
+
+async function generateMore() {
+  if (state.submitting) return;
+  state.submitting = true;
+  setMoreLoading(true);
+
+  const payload = buildPayload();
+  payload.exclude = state.shownScheduleIds;
+
+  try {
+    const res = await fetch("/api/v1/scheduler/schedules/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.status === 429) {
+      showMoreMessage("warning", "You're going a little fast — give it a moment, then try again.");
+      return;
+    }
+    if (res.status === 503) {
+      showMoreMessage("warning", "Course data is still loading. Please try again in a few minutes.");
+      return;
+    }
+    if (!res.ok) {
+      showMoreMessage("warning", "Something went wrong while building more schedules. Please try again.");
+      return;
+    }
+
+    const data = await res.json();
+    const schedules = data.schedules || [];
+    if (data.status === "ok" && schedules.length) {
+      state.result = data;
+      state.selectedOption = 0;
+      state.shownScheduleIds = state.shownScheduleIds.concat(schedules.map(scheduleSectionIds));
+      state.hasMore = !!data.has_more;
+      renderResults(data);
+    } else {
+      state.hasMore = false;
+      updateMoreButton();
+      showMoreMessage("info", "No more schedule combinations are available.");
+    }
+  } catch (e) {
+    showMoreMessage("warning", "Couldn't reach the server. Please try again.");
+  } finally {
+    state.submitting = false;
+    setMoreLoading(false);
+  }
 }
 
 function renderNotices(data) {
@@ -1089,14 +1198,21 @@ function renderCalendar(sched, colorMap) {
         block.style.top = `${top}px`;
         block.style.height = `${height}px`;
         block.style.backgroundColor = color;
-        block.appendChild(el("div", "cal-block-code", sec.course_code));
+        const codeLine = el("div", "cal-block-code");
+        codeLine.appendChild(document.createTextNode(sec.course_code));
+        if (sec.section_number) {
+          codeLine.appendChild(el("span", "cal-block-section", `-${sec.section_number}`));
+        }
+        block.appendChild(codeLine);
         if (sec.via_envelope) block.appendChild(el("div", "cal-block-badge", "Envelope"));
         block.appendChild(el("div", "cal-block-time", fmtRange(m.start_min, m.end_min)));
-        const locParts = [];
-        if (m.building && m.room) locParts.push(`${m.building} ${m.room}`);
-        else if (m.room) locParts.push(m.room);
-        if (sec.instructor_name) locParts.push(sec.instructor_name);
-        if (locParts.length) block.appendChild(el("div", "cal-block-loc", locParts.join(" · ")));
+        const roomParts = [];
+        if (m.building && m.room) roomParts.push(`${m.building} ${m.room}`);
+        else if (m.room) roomParts.push(m.room);
+        if (roomParts.length) block.appendChild(el("div", "cal-block-loc", roomParts.join(" · ")));
+        // Professor name sits on its own line below the room/building.
+        const instructor = titleCaseName(sec.instructor_name);
+        if (instructor) block.appendChild(el("div", "cal-block-prof", instructor));
         col.appendChild(block);
       });
     });
@@ -1265,10 +1381,15 @@ function renderAsyncList(items) {
   const list = el("div", "async-list");
   items.forEach((sec) => {
     const item = el("div", "async-item");
-    const main = el("div", "async-main", sec.course_code);
+    const main = el("div", "async-main");
+    main.appendChild(document.createTextNode(sec.course_code));
+    if (sec.section_number) {
+      main.appendChild(el("span", "async-section", `-${sec.section_number}`));
+    }
     const subParts = [];
     if (sec.title) subParts.push(sec.title);
-    if (sec.instructor_name) subParts.push(sec.instructor_name);
+    const asyncInstructor = titleCaseName(sec.instructor_name);
+    if (asyncInstructor) subParts.push(asyncInstructor);
     const sub = el("div", "async-sub", subParts.join(" · "));
     item.appendChild(main);
     item.appendChild(sub);
@@ -1352,6 +1473,8 @@ function restart() {
   state.result = null;
   state.noSchedule = null;
   state.selectedOption = 0;
+  state.shownScheduleIds = [];
+  state.hasMore = false;
   state.maxReached = 0;
   $id("course-input").value = "";
   $id("envelope-input").value = "";
@@ -1388,6 +1511,7 @@ function init() {
   });
 
   $id("btn-edit").addEventListener("click", () => { showView("stepper"); showStep(state.maxReached); });
+  $id("btn-more").addEventListener("click", generateMore);
   $id("btn-restart").addEventListener("click", restart);
   $id("btn-restart-2").addEventListener("click", restart);
   $id("btn-edit-constraints").addEventListener("click", () => { showView("stepper"); showStep(2); });

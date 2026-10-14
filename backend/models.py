@@ -38,6 +38,11 @@ class SolverRequest(BaseModel):
     blocked_times: list[BlockedTime] = Field(default_factory=list)
     skip_full_sections: bool = True
     envelopes: list[str] = Field(default_factory=list)
+    # Section ids of schedules already shown to the caller, so a "generate
+    # more" request returns the next batch rather than repeats.
+    exclude: list[list[int]] = Field(default_factory=list)
+    # How many new schedules to return (the solver stops after this many).
+    limit: int = 3
 
     @field_validator("preferences")
     @classmethod
@@ -150,6 +155,8 @@ class SolverResponse(BaseModel):
     schedules: list[ScheduleOut]
     cap_hit: bool = False
     bottleneck: Optional[BottleneckDiagnosis] = None
+    # True when more meaningfully-different schedules exist beyond ``schedules``.
+    has_more: bool = False
 
 
 class ParsedConstraints(BaseModel):
@@ -190,6 +197,8 @@ class GenerateRequest(BaseModel):
     allow_online: bool = False
     extra_constraints_text: Optional[str] = Field(default=None, max_length=500)
     envelopes: list[str] = Field(default_factory=list, max_length=8)
+    # Section ids of schedules already shown, so "generate more" skips them.
+    exclude: list[list[int]] = Field(default_factory=list)
 
     @field_validator("preferences")
     @classmethod
@@ -255,6 +264,8 @@ class GenerateResponse(BaseModel):
     assumptions: list[str] = Field(default_factory=list)
     cap_hit: bool = False
     bottleneck: Optional[BottleneckDiagnosis] = None
+    # True when more meaningfully-different schedules remain for the user.
+    has_more: bool = False
 
 
 class SchedulerStatusOut(BaseModel):

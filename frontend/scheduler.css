@@ -332,7 +332,9 @@ textarea { resize: vertical; }
   font-size: var(--fs-xs); line-height: 1.3;
 }
 .cal-block-code { font-weight: 700; font-size: var(--fs-s); }
+.cal-block-section { font-weight: 600; opacity: .65; }
 .cal-block-time, .cal-block-loc { opacity: .75; }
+.cal-block-prof { opacity: .9; }
 .cal-empty { padding: 40px; text-align: center; color: var(--muted); }
 
 /* ── Ease section ──────────────────────────────── */
@@ -397,6 +399,7 @@ textarea { resize: vertical; }
 .async-item { padding: 10px 0; border-top: 1px solid var(--border); }
 .async-item:first-child { border-top: 0; }
 .async-main { font-weight: 600; }
+.async-section { font-weight: 600; color: var(--muted); }
 .async-sub { font-size: var(--fs-s); color: var(--muted); }
 
 /* ── No schedule ───────────────────────────────── */

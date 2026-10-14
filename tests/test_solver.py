@@ -313,6 +313,30 @@ def test_fewer_than_three_distinct_returns_what_exists(db):
     assert len(res.schedules) == 1
 
 
+def test_generate_more_returns_next_batch_then_exhausts(db):
+    # Two courses, two sections each -> exactly four conflict-free schedules.
+    add_section("MKTG 201", "001", [M("Monday", 480, 540)])
+    add_section("MKTG 201", "002", [M("Monday", 600, 660)])
+    add_section("STRAT 305", "001", [M("Monday", 720, 780)])
+    add_section("STRAT 305", "002", [M("Monday", 840, 900)])
+
+    first = solve(courses=["MKTG 201", "STRAT 305"])
+    assert len(first.schedules) == 3
+    assert first.has_more is True
+
+    seen = [[s.id for s in sched.sections] for sched in first.schedules]
+    second = solve(courses=["MKTG 201", "STRAT 305"], exclude=seen)
+    assert len(second.schedules) == 1
+    assert second.has_more is False
+    new_ids = {s.id for s in second.schedules[0].sections}
+    assert new_ids not in [set(ids) for ids in seen]
+
+    seen_all = seen + [[s.id for s in sched.sections] for sched in second.schedules]
+    third = solve(courses=["MKTG 201", "STRAT 305"], exclude=seen_all)
+    assert third.schedules == []
+    assert third.has_more is False
+
+
 # ── Course normalization & closest-match error ───────────────────────────────
 
 def test_normalization_matches_case_insensitive(db):

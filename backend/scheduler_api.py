@@ -223,6 +223,7 @@ async def generate_schedules(request: Request, body: GenerateRequest):
         allow_online=body.allow_online,
         blocked_times=parsed.blocked_times,
         envelopes=body.envelopes,
+        exclude=body.exclude,
     )
 
     try:
@@ -251,6 +252,17 @@ async def generate_schedules(request: Request, body: GenerateRequest):
         )
 
     if not resp.schedules:
+        if body.exclude:
+            # A "generate more" request that found no further distinct schedules.
+            return GenerateResponse(
+                status="ok",
+                term=term,
+                schedules=[],
+                warnings=warnings,
+                assumptions=parsed.assumptions,
+                cap_hit=resp.cap_hit,
+                has_more=False,
+            )
         return GenerateResponse(
             status="no_schedule",
             term=term,
@@ -280,6 +292,7 @@ async def generate_schedules(request: Request, body: GenerateRequest):
         warnings=warnings,
         assumptions=parsed.assumptions,
         cap_hit=resp.cap_hit,
+        has_more=resp.has_more,
     )
 
 

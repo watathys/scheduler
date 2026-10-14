@@ -692,6 +692,11 @@ def _shared_sections(a: tuple[Section, ...], b: tuple[Section, ...]) -> int:
     return len({s.id for s in a} & {s.id for s in b})
 
 
+def _meaningfully_different_ids(a: frozenset[int], b: frozenset[int], n: int) -> bool:
+    """True when two schedules (as section-id sets) share <= half the *choices*."""
+    return 2 * len(a & b) <= n
+
+
 def _meaningfully_different(a: tuple[Section, ...], b: tuple[Section, ...], n: int) -> bool:
     """True when the two schedules share a section for <= half the *choices*.
 
@@ -700,7 +705,9 @@ def _meaningfully_different(a: tuple[Section, ...], b: tuple[Section, ...], n: i
     comparing shared section *ids* (rather than a positional zip) keeps two
     bundle choices distinct even when they share an individual section.
     """
-    return 2 * _shared_sections(a, b) <= n
+    return _meaningfully_different_ids(
+        frozenset(s.id for s in a), frozenset(s.id for s in b), n
+    )
 
 
 # ── Bottleneck diagnosis ──────────────────────────────────────────────────────
@@ -1032,14 +1039,31 @@ async def solve_schedule(req: SolverRequest) -> SolverResponse:
 
     n = len(groups)
     chosen: list[tuple[float, dict, tuple[Section, ...]]] = []
+    # Seed the "already chosen" set with schedules the caller has already seen
+    # so a "generate more" request returns the next batch instead of repeats.
+    seen_ids: list[frozenset[int]] = [frozenset(ids) for ids in (req.exclude or [])]
     for entry in scored:
-        if len(chosen) >= 3:
+        if len(chosen) >= req.limit:
             break
-        if all(_meaningfully_different(entry[2], c[2], n) for c in chosen):
+        ids = frozenset(s.id for s in entry[2])
+        if all(_meaningfully_different_ids(ids, c, n) for c in seen_ids):
             chosen.append(entry)
+            seen_ids.append(ids)
+
+    # ``has_more`` is definitive only when the search completed; when it hit
+    # the cap there may be schedules we never enumerated, so report "maybe".
+    has_more = cap_hit or any(
+        all(
+            _meaningfully_different_ids(frozenset(s.id for s in e[2]), c, n)
+            for c in seen_ids
+        )
+        for e in scored
+    )
 
     schedules = [
         _schedule_out(score, metrics, assignment)
         for score, metrics, assignment in chosen
     ]
-    return SolverResponse(schedules=schedules, cap_hit=cap_hit, bottleneck=None)
+    return SolverResponse(
+        schedules=schedules, cap_hit=cap_hit, has_more=has_more, bottleneck=None
+    )

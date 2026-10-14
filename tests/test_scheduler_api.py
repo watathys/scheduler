@@ -403,6 +403,31 @@ def test_generate_duplicate_courses_deduplicated(client):
     assert "Duplicate courses were removed." in body["warnings"]
 
 
+def test_generate_more_exclude_roundtrip(client):
+    # Four conflict-free schedules -> first call returns 3 with has_more.
+    _seed_section("MKTG 201", "001", [M("Monday", 480, 540)])
+    _seed_section("MKTG 201", "002", [M("Monday", 600, 660)])
+    _seed_section("STRAT 305", "001", [M("Monday", 720, 780)])
+    _seed_section("STRAT 305", "002", [M("Monday", 840, 900)])
+
+    first = _generate(client).json()
+    assert first["status"] == "ok"
+    assert len(first["schedules"]) == 3
+    assert first["has_more"] is True
+
+    seen = [[s["id"] for s in sched["sections"]] for sched in first["schedules"]]
+    second = _generate(client, exclude=seen).json()
+    assert second["status"] == "ok"
+    assert len(second["schedules"]) == 1
+    assert second["has_more"] is False
+
+    seen_all = seen + [[s["id"] for s in sched["sections"]] for sched in second["schedules"]]
+    third = _generate(client, exclude=seen_all).json()
+    assert third["status"] == "ok"
+    assert third["schedules"] == []
+    assert third["has_more"] is False
+
+
 # ── Active term ──────────────────────────────────────────────────────────────
 
 def test_active_term_picks_newest_term_in_db(client, monkeypatch):
