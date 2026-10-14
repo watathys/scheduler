@@ -966,11 +966,14 @@ async function generateMore() {
     const data = await res.json();
     const schedules = data.schedules || [];
     if (data.status === "ok" && schedules.length) {
-      state.result = data;
+      // Append the new batch to the already-shown schedules so they display
+      // side-by-side (Schedule 4, 5, 6, …).
+      state.result.schedules = state.result.schedules.concat(schedules);
+      state.result.has_more = !!data.has_more;
       state.selectedOption = 0;
       state.shownScheduleIds = state.shownScheduleIds.concat(schedules.map(scheduleSectionIds));
       state.hasMore = !!data.has_more;
-      renderResults(data);
+      renderResults(state.result);
     } else {
       state.hasMore = false;
       updateMoreButton();
@@ -993,8 +996,8 @@ function renderNotices(data) {
   };
   (data.warnings || []).forEach((w) => addNotice("warning", w));
   (data.assumptions || []).forEach((a) => addNotice("assumption", `I read that as: ${a}`));
-  if (data.cap_hit) {
-    addNotice("info", "Many schedules matched your criteria — showing the top 3.");
+  if (data.cap_hit && data.has_more) {
+    addNotice("info", "Many schedules matched your criteria — use “Generate 3 more schedules” to browse more.");
   }
 }
 

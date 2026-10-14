@@ -258,7 +258,8 @@ textarea { resize: vertical; }
 }
 .notice-assumption { background: var(--accent-soft); border-color: transparent; }
 
-.option-tabs { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
+.option-tabs-row { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+.option-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 .option-tab {
   display: flex; flex-direction: column; align-items: flex-start; gap: 0;
   padding: 8px 18px; min-width: 130px; text-align: left;
@@ -270,6 +271,16 @@ textarea { resize: vertical; }
 .option-tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); }
 .option-tab[aria-selected="true"] .option-tab-name { color: var(--accent-text); }
 .option-tab[aria-selected="true"] .option-tab-score { color: var(--accent-text); opacity: .8; }
+
+.btn-more {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 8px 18px; min-width: 130px;
+  background: none; border: 1px dashed var(--border-2); border-radius: 8px;
+  color: var(--accent); font-weight: 600; font-size: var(--fs-m); text-align: center;
+}
+.btn-more:hover:not(:disabled) { background: var(--accent-soft); }
+.btn-more:disabled { opacity: .55; cursor: not-allowed; }
+.btn-more[hidden] { display: none; }
 
 .option-panel { display: none; }
 .option-panel.is-active { display: block; }

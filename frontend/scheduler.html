@@ -129,7 +129,6 @@
     <div class="results-head">
       <h2 class="page-title">Your schedules</h2>
       <div class="results-actions">
-        <button class="btn-primary" id="btn-more" type="button" hidden>Generate 3 more schedules</button>
         <button class="btn-secondary" id="btn-edit" type="button">Edit answers</button>
         <button class="btn-secondary" id="btn-restart" type="button">Start over</button>
       </div>
@@ -137,7 +136,10 @@
 
     <div id="results-notices"></div>
 
-    <div class="option-tabs" id="option-tabs" role="tablist" aria-label="Schedule options"></div>
+    <div class="option-tabs-row">
+      <div class="option-tabs" id="option-tabs" role="tablist" aria-label="Schedule options"></div>
+      <button class="btn-more" id="btn-more" type="button" hidden>Generate 3 more schedules</button>
+    </div>
     <div id="option-panels"></div>
   </section>
 
