@@ -336,6 +336,25 @@ textarea { resize: vertical; }
 .score-toggle:hover .score-chevron { background: var(--accent-hover); }
 .score-card.is-open .score-chevron { transform: rotate(180deg); }
 .score-details { margin-top: 16px; }
+
+.feedback-card { margin-top: 16px; }
+.feedback-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 0; background: none; border: 0; text-align: left; color: inherit; cursor: pointer;
+}
+.feedback-label { font-size: var(--fs-s); font-weight: 600; color: var(--text); }
+.feedback-chevron {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-text);
+  font-size: var(--fs-s); font-weight: 700; line-height: 1;
+  transition: transform .15s ease;
+}
+.feedback-toggle:hover .feedback-chevron { background: var(--accent-hover); }
+.feedback-card.is-open .feedback-chevron { transform: rotate(180deg); }
+.feedback-details { margin-top: 12px; }
+.feedback-text { color: var(--text-2); font-size: var(--fs-s); line-height: 1.65; margin: 0; }
+.feedback-email { color: var(--accent); font-weight: 600; }
 .explanation { color: var(--text-2); font-size: var(--fs-s); line-height: 1.65; }
 
 .stat-list { margin-top: 20px; border-top: 1px solid var(--border); }

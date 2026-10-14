@@ -1158,7 +1158,39 @@ function renderScoreCard(sched, index) {
   });
 
   side.appendChild(card);
+  side.appendChild(renderFeedbackBox());
   return side;
+}
+
+// A small collapsible "Feedback?" box shown under the overall score.
+function renderFeedbackBox() {
+  const box = el("div", "card feedback-card");
+  const toggle = el("button", "feedback-toggle");
+  toggle.type = "button";
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.appendChild(el("span", "feedback-label", "Feedback?"));
+  toggle.appendChild(el("span", "feedback-chevron", "▾"));
+  box.appendChild(toggle);
+
+  const details = el("div", "feedback-details");
+  details.hidden = true;
+  const msg = el("p", "feedback-text");
+  msg.appendChild(document.createTextNode("Please email "));
+  const link = el("a", "feedback-email", "watathys@byu.edu");
+  link.href = "mailto:watathys@byu.edu";
+  msg.appendChild(link);
+  msg.appendChild(document.createTextNode(" if you have any feature requests or problems you want to report."));
+  details.appendChild(msg);
+  box.appendChild(details);
+
+  toggle.addEventListener("click", () => {
+    const open = details.hidden;
+    details.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    box.classList.toggle("is-open", open);
+  });
+
+  return box;
 }
 
 // ── Envelope notice ──────────────────────────────────────────────────────────
@@ -1525,36 +1557,6 @@ function relaxationText(label) {
   return map[label] || label;
 }
 
-// ── Restart ───────────────────────────────────────────────────────────────────
-function restart() {
-  state.courses = [];
-  state.envelopes = [];
-  state.preferences = DEFAULT_PREFS.slice();
-  state.daysOff = ["Friday"];
-  state.possibleDaysOff = WEEKDAYS.slice();
-  daysOffSeq++;  // invalidate any in-flight days-off lookup
-  state.earliestStart = "08:00";
-  state.latestEnd = "22:00";
-  state.allowOnline = false;
-  state.allowSaltLake = false;
-  state.extraText = "";
-  state.result = null;
-  state.noSchedule = null;
-  state.selectedOption = 0;
-  state.shownScheduleIds = [];
-  state.hasMore = false;
-  state.maxReached = 0;
-  $id("course-input").value = "";
-  $id("envelope-input").value = "";
-  $id("extra-text").value = "";
-  setEnvelopePickerOpen(false);
-  renderCourseList();
-  renderEnvelopeChips();
-  showView("stepper");
-  showStep(0);
-  announce("Started over.");
-}
-
 // ── Init ──────────────────────────────────────────────────────────────────────
 function init() {
   initTheme();
@@ -1581,8 +1583,6 @@ function init() {
 
   $id("btn-edit").addEventListener("click", () => { showView("stepper"); showStep(state.maxReached); });
   $id("btn-more").addEventListener("click", generateMore);
-  $id("btn-restart").addEventListener("click", restart);
-  $id("btn-restart-2").addEventListener("click", restart);
   $id("btn-edit-constraints").addEventListener("click", () => { showView("stepper"); showStep(2); });
 
   showStep(0);
