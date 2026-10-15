@@ -29,7 +29,7 @@ class BlockedTime(BaseModel):
 
 class SolverRequest(BaseModel):
     term: str
-    courses: list[str] = Field(..., min_length=1)
+    courses: list[str] = Field(default_factory=list)
     preferences: list[str]
     days_off: list[str] = Field(default_factory=lambda: ["Friday"])
     earliest_start_min: int = 0
@@ -58,6 +58,8 @@ class SolverRequest(BaseModel):
     def _validate_window(self):
         if self.earliest_start_min > self.latest_end_min:
             raise ValueError("earliest_start_min must be <= latest_end_min")
+        if not self.courses and not self.envelopes:
+            raise ValueError("At least one course or envelope must be provided.")
         return self
 
 
@@ -194,7 +196,7 @@ def parse_hhmm_to_minutes(value: str) -> int:
 
 
 class GenerateRequest(BaseModel):
-    courses: list[str] = Field(..., min_length=1, max_length=8)
+    courses: list[str] = Field(default_factory=list, max_length=8)
     preferences: list[str]
     days_off: list[str] = Field(default_factory=lambda: ["Friday"])
     earliest_start: str = "08:00"
@@ -239,6 +241,8 @@ class GenerateRequest(BaseModel):
     def _validate_window(self):
         if parse_hhmm_to_minutes(self.earliest_start) > parse_hhmm_to_minutes(self.latest_end):
             raise ValueError("earliest_start must be <= latest_end")
+        if not self.courses and not self.envelopes:
+            raise ValueError("At least one course or envelope must be provided.")
         return self
 
     @property

@@ -402,8 +402,8 @@ function renderCourseList() {
 }
 
 function validateCourses() {
-  if (state.courses.length === 0) {
-    showFormError("Please add at least one course.");
+  if (state.courses.length === 0 && state.envelopes.length === 0) {
+    showFormError("Please add at least one course or envelope.");
     return false;
   }
   return true;
@@ -550,11 +550,13 @@ function addEnvelope(item) {
   clearEnvelopeSuggestions();
   envelopeInput.value = "";
   envelopeInput.focus();
+  refreshDaysOff();
 }
 
 function removeEnvelope(index) {
   state.envelopes.splice(index, 1);
   renderEnvelopeChips();
+  refreshDaysOff();
 }
 
 function renderEnvelopeChips() {
@@ -698,7 +700,10 @@ function renderDaysOff() {
 }
 
 async function refreshDaysOff() {
-  const codes = state.courses.map((c) => c.code);
+  const codeSet = new Set();
+  state.courses.forEach((c) => codeSet.add(c.code));
+  state.envelopes.forEach((e) => (e.courses || []).forEach((c) => codeSet.add(c)));
+  const codes = Array.from(codeSet);
   const seq = ++daysOffSeq;
   if (codes.length === 0) {
     state.possibleDaysOff = WEEKDAYS.slice();
@@ -1522,6 +1527,19 @@ function renderNoSchedule(data) {
     body.appendChild(el("p", "bottleneck-item", `${r.course}: impossible because ${why}.`));
   });
 
+  (b.envelope_problems || []).forEach((ep) => {
+    const removed = ep.removed_by || {};
+    const reasons = [];
+    if (removed.days_off) reasons.push("conflicts with a day you want off");
+    if (removed.online) reasons.push("has online sections");
+    if (removed.salt_lake) reasons.push("has Salt Lake Center sections");
+    if (removed.full) reasons.push("all bundles full");
+    if (removed.earliest_latest) reasons.push("outside your time window");
+    if (removed.blocked_times) reasons.push("conflicts with your blocked times");
+    const why = reasons.length ? reasons.join(", ") : "no matching bundles";
+    body.appendChild(el("p", "bottleneck-item", `${ep.title}: envelope could not be scheduled (${why}).`));
+  });
+
   (b.always_conflicting_pairs || []).forEach(([a, c]) => {
     body.appendChild(el("p", "bottleneck-item", `${a} and ${c} conflict — every section of one overlaps the other.`));
   });
@@ -1535,7 +1553,7 @@ function renderNoSchedule(data) {
     });
     box.appendChild(ul);
     body.appendChild(box);
-  } else if (!(b.no_sections || []).length && !(b.always_conflicting_pairs || []).length) {
+  } else if (!(b.no_sections || []).length && !(b.envelope_problems || []).length && !(b.always_conflicting_pairs || []).length) {
     body.appendChild(el("p", "bottleneck-item", "Your constraints are too tight to fit these courses together."));
   }
 

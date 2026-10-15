@@ -849,21 +849,22 @@ def diagnose_bottleneck(
 
     # Which single relaxation makes the whole thing feasible?
     feasible: list[str] = []
-    for label in RELAXATION_LABELS:
-        rreq = _relaxed_request(req, label)
-        rblocked = _blocked_tuples(rreq)
-        courses_sections: list[tuple[str, list[Section]]] = []
-        ok = True
-        for code in codes:
-            kept, _ = _apply(rreq, loaded[code], rblocked, instructors.get(code))
-            if not kept:
-                ok = False
-                break
-            courses_sections.append((code, kept))
-        if ok:
-            courses_sections.sort(key=lambda cs: (len(cs[1]), cs[0]))
-            if _feasible(courses_sections):
-                feasible.append(label)
+    if codes:
+        for label in RELAXATION_LABELS:
+            rreq = _relaxed_request(req, label)
+            rblocked = _blocked_tuples(rreq)
+            courses_sections: list[tuple[str, list[Section]]] = []
+            ok = True
+            for code in codes:
+                kept, _ = _apply(rreq, loaded[code], rblocked, instructors.get(code))
+                if not kept:
+                    ok = False
+                    break
+                courses_sections.append((code, kept))
+            if ok:
+                courses_sections.sort(key=lambda cs: (len(cs[1]), cs[0]))
+                if _feasible(courses_sections):
+                    feasible.append(label)
 
     msgs: list[str] = []
     for r in no_sections:

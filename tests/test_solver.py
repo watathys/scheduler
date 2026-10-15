@@ -698,3 +698,19 @@ def test_shared_sections_across_envelopes(db):
     assert codes == ["STRAT 411", "STRAT 412", "STRAT 432"]
     # The shared section appears once.
     assert len(sched.sections) == 3
+
+
+def test_solve_with_only_envelope_no_courses(db):
+    add_section("EXDM 415", "001", [M("Monday", 480, 555)])
+    add_section("EXDM 416", "001", [M("Monday", 570, 645)])
+    _load_envelopes_ok("exdm-core", [
+        _env_bundle("28001", [
+            _env_sec("EXDM 415", "001", [("Monday", 480, 555, "TNRB 1")]),
+            _env_sec("EXDM 416", "001", [("Monday", 570, 645, "TNRB 1")]),
+        ]),
+    ])
+    res = solve(courses=[], envelopes=["exdm-core"])
+    assert len(res.schedules) == 1
+    sched = res.schedules[0]
+    assert len(sched.sections) == 2
+    assert {s.course_code for s in sched.sections} == {"EXDM 415", "EXDM 416"}

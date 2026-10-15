@@ -646,3 +646,29 @@ def test_generate_with_envelope_returns_tagged_sections(client):
         assert s["via_envelope"] == "Exdm Core"
         assert s["env_id"] == "28004"
         assert s["captured_at"] == "2026-10-13"
+
+
+def test_generate_with_only_envelope_without_courses(client):
+    _seed_section("EXDM 415", "001", [M("Monday", 480, 555, "TNRB", "1258")])
+    _seed_section("EXDM 416", "001", [M("Monday", 570, 645, "TNRB", "1258")])
+    _load_and_verify("exdm-core", [
+        _env_bundle("28004", [
+            _env_section("EXDM 415", "001", [("Monday", 480, 555, "TNRB 1258")]),
+            _env_section("EXDM 416", "001", [("Monday", 570, 645, "TNRB 1258")]),
+        ]),
+    ])
+
+    r = _generate(client, courses=[], envelopes=["exdm-core"])
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok"
+    sched = body["schedules"][0]
+    assert len(sched["sections"]) == 2
+    for s in sched["sections"]:
+        assert s["via_envelope"] == "Exdm Core"
+        assert s["env_id"] == "28004"
+
+
+def test_generate_without_courses_or_envelopes_422(client):
+    r = _generate(client, courses=[], envelopes=[])
+    assert r.status_code == 422
