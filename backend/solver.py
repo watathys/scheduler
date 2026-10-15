@@ -1107,6 +1107,20 @@ async def solve_schedule(req: SolverRequest) -> SolverResponse:
     scored.sort(key=_sort_key)
 
     n = len(groups)
+    # A bundle is one choice: two schedules share it only when they contain
+    # *all* of its sections. Counting individual shared section ids would
+    # wrongly treat bundles that merely overlap on one section as duplicates.
+    option_idsets = [
+        [frozenset(x.id for x in opt) for opt in g[1]] for g in groups
+    ]
+
+    def _differs(a: frozenset[int], b: frozenset[int]) -> bool:
+        shared = 0
+        for idsets in option_idsets:
+            if any(o <= a and o <= b for o in idsets):
+                shared += 1
+        return 2 * shared <= n
+
     chosen: list[tuple[float, dict, tuple[Section, ...]]] = []
     # Seed the "already chosen" set with schedules the caller has already seen
     # so a "generate more" request returns the next batch instead of repeats.
@@ -1115,7 +1129,7 @@ async def solve_schedule(req: SolverRequest) -> SolverResponse:
         if len(chosen) >= req.limit:
             break
         ids = frozenset(s.id for s in entry[2])
-        if all(_meaningfully_different_ids(ids, c, n) for c in seen_ids):
+        if all(_differs(ids, c) for c in seen_ids):
             chosen.append(entry)
             seen_ids.append(ids)
 
@@ -1123,7 +1137,7 @@ async def solve_schedule(req: SolverRequest) -> SolverResponse:
     # the cap there may be schedules we never enumerated, so report "maybe".
     has_more = cap_hit or any(
         all(
-            _meaningfully_different_ids(frozenset(s.id for s in e[2]), c, n)
+            _differs(frozenset(s.id for s in e[2]), c)
             for c in seen_ids
         )
         for e in scored

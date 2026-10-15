@@ -116,12 +116,3 @@ def test_html_references_envelope_picker():
     assert 'id="envelope-chips"' in html
 
 
-def test_frontend_envelope_notice_copy_present():
-    """The results view must carry the required envelope registration copy."""
-    js = (FRONTEND_DIR / "scheduler.js").read_text(encoding="utf-8")
-    assert "Register in the Registration Cart by choosing the envelope that lists exactly these sections" in js
-    assert "Env numbers are specific to" in js
-    assert "Some envelopes are restricted to certain programs or students. Confirm eligibility in myBYU." in js
-    # The envelope sections are built with DOM APIs (via the `el` helper), not
-    # string-concatenated into innerHTML.
-    assert "function buildEnvelopeNotice" in js

@@ -1094,10 +1094,8 @@ function fmtScore(n) {
 function renderOptionCard(sched, index, colorMap, term) {
   const layout = el("div", "option-layout");
 
-  // Main column: envelope notice (if any) + calendar + online classes.
+  // Main column: calendar + online classes.
   const main = el("div", "option-main");
-  const envNotice = buildEnvelopeNotice(sched, term);
-  if (envNotice) main.appendChild(envNotice);
   const calCard = el("div", "card card-flush");
   calCard.appendChild(renderCalendar(sched, colorMap));
   main.appendChild(calCard);
@@ -1196,50 +1194,6 @@ function renderFeedbackBox() {
   });
 
   return box;
-}
-
-// ── Envelope notice ──────────────────────────────────────────────────────────
-function buildEnvelopeNotice(sched, term) {
-  const envSections = (sched.sections || []).filter((s) => s.via_envelope);
-  if (!envSections.length) return null;
-
-  const card = el("section", "card envelope-notice");
-  card.setAttribute("aria-label", "Envelope registration required");
-  card.appendChild(el("h3", "card-title", "Envelope registration"));
-
-  // Group sections by their envelope id (fall back to the title).
-  const groups = [];
-  const indexByKey = new Map();
-  envSections.forEach((s) => {
-    const key = s.env_id || s.via_envelope;
-    if (!indexByKey.has(key)) {
-      indexByKey.set(key, { envId: s.env_id, title: s.via_envelope, capturedAt: s.captured_at, sections: [] });
-      groups.push(indexByKey.get(key));
-    }
-    indexByKey.get(key).sections.push(s);
-  });
-
-  groups.forEach((g) => {
-    const block = el("div", "envelope-notice-block");
-    block.appendChild(el("p", "envelope-notice-title", g.title));
-    block.appendChild(el("p", "envelope-notice-rule",
-      "Register in the Registration Cart by choosing the envelope that lists exactly these sections"));
-    const list = el("ul", "envelope-notice-list");
-    g.sections.forEach((s) => {
-      list.appendChild(el("li", null, `${s.course_code} ${s.section_number}`));
-    });
-    block.appendChild(list);
-    const meta = g.envId
-      ? `Env ${g.envId} (Env numbers are specific to ${term} and the date this list was captured ${g.capturedAt})`
-      : `This envelope was captured ${g.capturedAt}`;
-    block.appendChild(el("p", "envelope-notice-meta", meta));
-    card.appendChild(block);
-  });
-
-  card.appendChild(el("p", "envelope-notice-disclaimer",
-    "Some envelopes are restricted to certain programs or students. Confirm eligibility in myBYU."));
-
-  return card;
 }
 
 // ── Calendar grid ─────────────────────────────────────────────────────────────
